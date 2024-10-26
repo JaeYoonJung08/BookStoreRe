@@ -1,0 +1,9 @@
+# Node modules directory
+node_modules/
+
+
+
+# Other common ignores
+.DS_Store
+dist/
+build/
