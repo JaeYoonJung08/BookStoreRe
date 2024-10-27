@@ -1,0 +1,70 @@
+doctype html
+html
+  head
+    title Booklist Page
+    style.
+      body {
+        display: flex; 
+        flex-direction: column;
+        align-items: center;
+      }
+      .container {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+      }
+      table {
+        width: 50%;
+        border-collapse: collapse;
+        margin-right: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
+        text-align: left;
+      }
+      form {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      input {
+        width : 300px;
+        margin : 10px;
+        padding : 5px;
+      }
+  body
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    h1 이 페이지는 책 추가와 조회를 위한 페이지입니다.
+    .container
+      table
+        thead
+          tr
+            th 책 이름
+            th 책 수량
+            th 가격
+            th 상세보기
+        tbody
+          each book in books
+            tr
+              td= book.book_name
+              td= book.book_count
+              td= book.book_price
+              td
+                a(href=`/booklist/${book.book_id}`) 상세보기
+      form(action="/booklist/bookAdd", method="post")
+        div 
+          input(type="text", name="bookName", placeholder="책 이름을 작성해주세요.")
+        div 
+          input(type="text", name="bookCount", placeholder="책 수량을 입력해주세요")
+        div 
+          input(type="text", name="bookPrice", placeholder="책 가격을 입력해주세요.")
+        div 
+          button(type="submit") 책 추가
+
+        
+

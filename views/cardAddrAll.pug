@@ -1,0 +1,70 @@
+doctype html
+html
+  head
+    title Booklist Page
+    style.
+      body {
+        display: flex; 
+        flex-direction: column;
+        align-items: center;
+      }
+      .container {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+      }
+      table {
+        width: 50%;
+        border-collapse: collapse;
+        margin-right: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
+        text-align: left;
+      }
+      form {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      input {
+        width : 300px;
+        margin : 10px;
+        padding : 5px;
+      }
+  body
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    h1 이 페이지는 사용자의 카드와 주소를 조회하는 페이지입니다.
+    .container
+      table
+        thead
+          tr
+            th 카드 번호
+            th 카드 종류
+            th 유효기간
+        tbody
+          each cards in card
+            tr
+              td= cards.card_number
+              td= cards.type_card
+              td= cards.expriation_time
+        br
+      table
+        thead
+          tr
+            th 기본 주소
+            th 상세 주소
+            th 우편번호
+        tbody
+          each addrs in addr
+            tr
+              td= addrs.basic_add
+              td= addrs.detail_add
+              td= addrs.postal_code
+
+ 
