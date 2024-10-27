@@ -1,0 +1,55 @@
+doctype html
+html
+  head
+    title 장바구니 목록
+    style.
+      table {
+        width: 50%;
+        border-collapse: collapse;
+        margin-right: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
+        text-align: left;
+      }
+    script.
+      function calculateTotal() {
+        let total = 0;
+        const checkboxes = document.querySelectorAll('input[name="selectedBooks"]:checked');
+        checkboxes.forEach(checkbox => {
+          const book = JSON.parse(checkbox.value);
+          total += book.book_count * book.book_price;
+        });
+        document.getElementById('totalPrice').value = total;
+      }
+  body 
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    h1 장바구니 목록
+    if books.length
+      form(action="/orderpage", method="POST", onsubmit="calculateTotal()")
+        table
+          thead 
+            tr
+              th 선택
+              th 책 ID 
+              th 책 이름
+              th 가격
+              th 수량
+          tbody 
+            each book in books
+              - const book_count = bookbasketlist.find(item => item.book_id === book.book_id).book_count
+              tr
+                td: input(type="checkbox", name="selectedBooks", value=JSON.stringify({ book_id: book.book_id, book_count: book_count, book_price: book.book_price, book_name:book.book_name }), onclick="calculateTotal()")
+                td= book.book_id
+                td= book.book_name
+                td= book.book_price
+                td= book_count
+        input(type="hidden", id="totalPrice", name="all_price", value="0")
+
+        button(type="submit") 주문하기
+    else
+      p 장바구니에 담긴 책이 없습니다.

@@ -16,6 +16,33 @@ html
         background-color: #f2f2f2;
         text-align: left;
       }
+    script.
+      function setBookCountAndSelectedBooks() {
+        //book_count: book.book_count의 값을 book_pharse_count_buy로 변경해주는 함수
+
+        // book_pharse_count_buy 필드의 입력값을 가져옵니다.
+        const bookCountBuyInput = document.querySelector('input[name="book_pharse_count_buy"]').value;
+        // selectedBooks라는 숨겨진 필드의 값을 가져와 새로운 book_count로 업데이트합니다.
+        const selectedBooksInput = document.querySelector('input[name="selectedBooks"]');
+        const bookData = JSON.parse(selectedBooksInput.value);
+        // book_count를 bookCountBuyInput의 값으로 업데이트합니다.
+        bookData.book_count = bookCountBuyInput;
+        
+        // 업데이트된 bookData를 다시 selectedBooks 필드에 설정합니다.
+        selectedBooksInput.value = JSON.stringify(bookData);
+      }
+      function calculateTotal(price) {
+        let total = 0;
+        const countBuy = document.querySelector('input[name="book_pharse_count_buy"]').value;
+        console.log('Count Buy:', countBuy); // Check the countBuy value
+        console.log('Price:', price); // Check the price value
+        // Check if the input is a number and multiply with price
+        if (!isNaN(countBuy) && countBuy > 0) {
+          total = countBuy * price;
+        }
+        // Set the calculated total to the totalPrice input field
+        document.getElementById('totalPrice').value = total;
+      }
     body 
       a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
       h1 책 상세페이지입니다
@@ -34,9 +61,71 @@ html
         form(action="/booklist/basketAdd", method="post")
             input(type="hidden", name="book_id", value=book.book_id)
             input(type="hidden", name="book_count", value=book.book_count)
-            input(type="text", name="book_pharse_count", placeholder="주문할 수량을 넣어주세요")
+            input(type="text", name="book_pharse_count", placeholder="장바구니에 담을 수량을 넣어주세요")
             div 
               button(type="submit") 장바구니 추가
-        
-        
-            
+        form(action="/orderpage", method="post")
+            input(type="hidden", name="selectedBooks", value=JSON.stringify({ book_id: book.book_id, book_count: book.book_count, book_price: book.book_price, book_name:book.book_name }))
+            input(type="hidden", id="totalPrice", name="all_price", value="0")
+            input(type="text", name="book_pharse_count_buy", placeholder="즉시 주문할 수량을 넣어주세요", oninput=`calculateTotal(${book.book_price})`)
+            div 
+              button(type="submit", onclick="setBookCountAndSelectedBooks()") 즉시주문
+
+//- doctype html
+//- html
+//-   head
+//-     title User Form
+//-     style.
+//-       table {
+//-         width: 50%;
+//-         border-collapse: collapse;
+//-         margin-right: 20px;
+//-       }
+//-       th, td {
+//-         border: 1px solid #ddd;
+//-         padding: 8px;
+//-       }
+//-       th {
+//-         background-color: #f2f2f2;
+//-         text-align: left;
+//-       }
+//-     script.
+//-       function calculateTotal(price) {
+//-         let total = 0;
+//-         const countBuy = document.querySelector('input[name="book_pharse_count_buy"]').value;
+//-         console.log('Count Buy:', countBuy); // Check the countBuy value
+//-         console.log('Price:', price); // Check the price value
+//-         // Check if the input is a number and multiply with price
+//-         if (!isNaN(countBuy) && countBuy > 0) {
+//-           total = countBuy * price;
+//-         }
+//-         // Set the calculated total to the totalPrice input field
+//-         document.getElementById('totalPrice').value = total;
+//-       }
+//-     body 
+//-       a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+//-       h1 책 상세페이지입니다
+//-     .container 
+//-         table
+//-             thead 
+//-               tr
+//-                 th 책 이름
+//-                 th 책 수량
+//-                 th 가격
+//-             tbody 
+//-               tr
+//-                 td= book.book_name 
+//-                 td= book.book_count 
+//-                 td= book.book_price
+//-         form(action="/booklist/basketAdd", method="post")
+//-             input(type="hidden", name="book_id", value=book.book_id)
+//-             input(type="hidden", name="book_count", value=book.book_count)
+//-             input(type="text", name="book_pharse_count", placeholder="장바구니에 담을 수량을 넣어주세요")
+//-             div 
+//-               button(type="submit") 장바구니 추가
+//-         form(action="/orderpage", method="post")
+//-             input(type="hidden", name="selectedBooks", value=JSON.stringify({ book_id: book.book_id, book_count: book.book_count, book_price: book.book_price, book_name:book.book_name }))
+//-             input(type="hidden", id="totalPrice", name="all_price", value="0")
+//-             input(type="text", name="book_pharse_count_buy", placeholder="즉시 주문할 수량을 넣어주세요", oninput=`calculateTotal(${book.book_price})`)
+//-             div 
+//-               button(type="submit") 즉시주문
