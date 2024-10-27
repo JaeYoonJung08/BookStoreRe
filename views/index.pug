@@ -1,5 +1,9 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
+  div(style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;")
+    a(href="/user" style="margin-bottom: 10px;") 로그인, 회원가입
+    //- a(href="/cardAddr" style="margin-bottom: 10px") 카드, 주소 입력
+    //- a(href="/booklist", style="margin-bottom: 10px" ) 책 list 보기
+    //- a(href="/bookbasket", style="margin-bottom: 10px" ) 장바구니 보기
+    //- a(href="/orderpage" style="margin-bottom: 10px") 주문내역 보기
