@@ -47,7 +47,7 @@ router.post('/signin', async (req, res) => {
       console.log("req.session.bookbasket : " +req.session.basket_id)
       return res.send(
         `<script type="text/javascript">
-        alert("로그은이 성공적으로 수행되었습니다.");
+        alert("로그인이 성공적으로 수행되었습니다.");
         location.href='/';
         </script>`
       );
@@ -203,7 +203,7 @@ router.post('/cardAddr/createaddr', async (req,res)=> {
       )
       return res.send(
         `<script type="text/javascript">
-        alert("주소가 등록 되었입니다.");
+        alert("주소가 등록 되었습니다.");
         location.href='/';
         </script>`
       );
@@ -463,6 +463,31 @@ router.post('/bookbakset/change', async (req,res) => {
     console.log(error);
   }
 })
+
+//장바구니에서 목록 삭제
+router.post('/bookbasket/delete', async (req, res)=> {
+  const {book_id} = req.body
+  try
+  {
+    req.db.query(
+      'DELETE FROM basketlist WHERE basket_id = ? AND book_id = ?'
+      ,[req.session.basket_id, book_id]
+    )
+    return res.send(
+      `<script type="text/javascript">
+      alert("삭제되었습니다.");
+      location.href='/bookbasket';
+      </script>`
+    );
+
+  }catch(error)
+  {
+    console.log(error)
+  }
+})
+
+
+
 
 // ----------------------------------------------------------- 주문하기 -------------------------------------------------------
 // 장바구니에서 주문하기인데 주문하기 버튼을 누르고 난 후임.
