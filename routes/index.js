@@ -657,11 +657,37 @@ router.post('/orderpage/add', async (req, res) => {
           `;
           await req.db.query(insertOrderListQuery, [orders_id, book.book_id, book.book_count]);
 
+          //------------------- bestseller ----------------- 검색 먼저 
+          const check = await req.db.query(
+            'select * from buymon where book_id = ?'
+            ,[book.book_id]
+          )
+          if (check.length === 0)
+          {
+            await req.db.query(
+              'INSERT INTO buymon (book_id, yearmonth, buy_count) VALUES (?, ?, ?);'
+              ,[book.book_id, 202411, book.book_count]
+            )
+          }
+          else
+          {
+            let count = parseInt(check[0].buy_count);
+            count += parseInt(book.book_count);
+            await req.db.query(
+              'UPDATE buymon SET buy_count = ? WHERE book_id = ?',
+              [count, book.book_id]
+            );
+          }
           //주문을 했으니 장바구니에서 없애주어야함. -> req.session.basket_id과 주문한 selectedBookList이용
           req.db.query(
               'delete from basketlist where basket_id = ? and book_id = ?',
               [req.session.basket_id, book.book_id])
       }
+
+
+
+
+      
 
 
       return res.send(
@@ -729,6 +755,46 @@ router.get('/orderpagelist/:orders_id', async (req, res) => {
 catch(error){
     console.log(error);
 }    
+})
+
+
+// ---------
+router.get('/bestseller', async (req,res) => {
+  try
+  {
+    const checkorderlist = await req.db.query(
+      'SELECT * FROM buymon ORDER BY buy_count DESC LIMIT 3;'
+    )
+
+    // checkorderlist를 반복문으로 순회하며 booklist 테이블에서 정보를 가져옵니다.
+    const check = [];
+
+    for (const item of checkorderlist) {
+      const bookInfo = await req.db.query(
+        'SELECT book_name, book_price FROM booklist WHERE book_id = ?',
+        [item.book_id]
+      );
+    
+      // bookInfo가 배열로 반환되므로 첫 번째 요소를 선택하고, 추가 정보와 함께 check에 추가합니다.
+      if (bookInfo.length > 0) {
+        check.push({
+          book_id: item.book_id,
+          yearmonth: item.yearmonth,
+          buy_count: item.buy_count,
+          book_name: bookInfo[0].book_name,
+          book_price: bookInfo[0].book_price
+        });
+      }
+    }
+
+
+    console.log("checkorderlist : ", checkorderlist)
+    res.render('bestseller', {check: check});
+  }
+  catch(error)
+  {
+    console.log(error)
+  }
 })
 
 module.exports = router;
