@@ -52,11 +52,13 @@ html
           tr
             th 책 이름
             th 가격
+            th 판매량
         tbody(id="bookTableBody")
           each book in check
             tr
               td= book.book_name
               td= book.book_price
+              td= book.buy_count
                   
 
 
