@@ -23,6 +23,7 @@ html
         table
             thead 
               tr
+                th 쿠폰
                 th 총가격 
                 th 기본주소
                 th 상세주소
@@ -32,9 +33,11 @@ html
                 th 카드만료기간
                 th 주문시간
                 th 주문한 책 상세보기
+
             tbody 
               each order in ordersList
                 tr
+                  td= order.coupon_price
                   td= order.all_price 
                   td= order.basic_add 
                   td= order.detail_add 

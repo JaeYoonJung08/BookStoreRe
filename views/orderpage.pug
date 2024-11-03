@@ -49,6 +49,13 @@ html
               option(value=card.card_id)= `${card.type_card} 카드 - ${card.card_number} (유효기간: ${card.expriation_time})`
         else
           p 카드 정보가 없습니다.
+        h3 쿠폰 정보
+        if coupon.length
+          select(name="selectedCoupon")
+            each cu in coupon
+              option(value=cu.coupon_id)= `${cu.coupon_type} 쿠폰 - 종료기간 ${cu.coupon_fin_time})`
+        else
+          p 카드 정보가 없습니다.
         input(type="hidden", name="totalPrice", value=all_price)
         input(type="hidden", name="selectedBookList", value=selectedBookList)
         button(type="submit") 주문하기

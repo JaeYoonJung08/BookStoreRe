@@ -1,0 +1,69 @@
+doctype html
+html
+  head
+    title Booklist Page
+    style.
+      body {
+        display: flex; 
+        flex-direction: column;
+        align-items: center;
+      }
+      .container {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+      }
+      table {
+        width: 50%;
+        border-collapse: collapse;
+        margin-right: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
+        text-align: left;
+      }
+      form {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      input {
+        width: 300px;
+        margin: 10px;
+        padding: 5px;
+      }
+      #searchInput {
+        border: 2px solid #007BFF;
+        border-radius: 4px;
+        padding: 10px;
+        width: 100%;
+        max-width: 400px;
+        margin-right : 1200px;
+      }
+  body
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    .container
+      table
+        thead
+          tr
+            th 쿠폰종류
+            th 쿠폰 사용 여부
+            th 쿠폰 발급일
+            th 종료일
+            th 사용일
+        tbody
+          each cou in coupon
+            tr
+              td= cou.coupon_type
+              td= cou.coupon_use
+              td= cou.coupon_start_time 
+              td= cou.coupon_fin_time
+              td= cou.coupon_use_date
+              
+
+                  

@@ -3,6 +3,26 @@ var router = express.Router();
 var logger = require('../logger');
 // const { router } = require('../app');
 
+// ------------------ 쿠폰 --------------------
+router.get('/coupon', async (req, res)=> {
+  try
+  {
+    const coupon  = await req.db.query(
+      'select * from coupon where user_id = ?',
+      [req.session.user_id]
+    )
+    res.render('coupon', {coupon:coupon})
+
+
+  }catch(error)
+  {
+    console.log(error)
+  }
+})
+
+
+//------------------------------
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   logger.info(`Request received for URL: ${req.originalUrl}`);
@@ -520,7 +540,16 @@ router.post('/orderpage', async (req, res) => {
           'select * from card wherer where user_id = ?',
           [req.session.user_id]
       )
-      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList});
+      //쿠폰 날짜 남아있는 거 보옂귀
+      const coupon = await req.db.query(
+        'SELECT * FROM coupon WHERE user_id = ? AND STR_TO_DATE(coupon_fin_time, "%Y-%m-%d") >= CURDATE() and coupon_use = 0',
+        [req.session.user_id]
+      );
+      console.log(coupon)
+
+      
+
+      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList, coupon});
   }
   catch(error)
   {
@@ -575,10 +604,15 @@ router.post('/buynow/orderpage', async (req, res) => {
       )
       //카드번호, 카드 종류, 카드 유효기간 
       const UserCard = await req.db.query(
-          'select * from card wherer where user_id = ?',
+          'select * from card where user_id = ?',
           [req.session.user_id]
       )
-      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList});
+      // 쿠폰
+      const coupon = await req.db.query(
+        'SELECT * FROM coupon WHERE user_id = ? AND STR_TO_DATE(coupon_fin_time, "%Y-%m-%d") >= CURDATE() and coupon_use = 0',
+        [req.session.user_id]
+      );
+      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList, coupon});
   }
   catch(error)
   {
@@ -594,7 +628,7 @@ router.post('/buynow/orderpage', async (req, res) => {
 //  이제 주문 목록, 주문 총액, 배송지 정보, 카드 정보 보여주면서 마지막 주문
 router.post('/orderpage/add', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
-  const {totalPrice, selectedCard, selectedAddress} = req.body;
+  const {totalPrice, selectedCard, selectedAddress, selectedCoupon} = req.body;
 
   let selectedBookList;
   try {
@@ -607,6 +641,8 @@ router.post('/orderpage/add', async (req, res) => {
   console.log("selectedCard : ", selectedCard);
   console.log("selectedAddress : ", selectedAddress);
   console.log("selectedBookList : ", selectedBookList);
+  console.log("selectedBookList : ", selectedCoupon)
+
 
   try{
       //주문시킨 책 만큼 책 개수 감소 //반복문!!!!!!!!!!!!!!!!!!!
@@ -634,20 +670,53 @@ router.post('/orderpage/add', async (req, res) => {
           'select card_number, type_card, expriation_time from card where card_id = ?', 
           [selectedCard]
       )
+
       const { basic_add, detail_add, postal_code } = valueAddr[0];
       const { card_number, type_card, expriation_time } = valueCard[0];
       
       //order 테이블에 값 넣기
       const insertOrderQuery = `
       INSERT INTO orders (
-          user_id, all_price, basic_add, detail_add, postal_code, card_number, type_card, expriation_time
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+          user_id, all_price, basic_add, detail_add, postal_code, card_number, type_card, expriation_time, coupon_price, coupon_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`;
       
+      const Coupon = await req.db.query(
+        'select * from coupon where coupon_id = ?', 
+        [selectedCoupon]
+      )
+      console.log(Coupon)
+
+      let price = null;
+
+      if (Coupon)
+      {
+        if (Coupon[0].coupon_type === '10%') {
+          price = parseInt(totalPrice) - (parseInt(totalPrice) / 10)
+        } else if (Coupon[0].coupon_type === '1000') {
+          console.log('쿠폰 타입은 1000입니다.');
+          price = parseInt(totalPrice) - 1000;
+        } else {
+          console.log('쿠폰 타입이 일치하지 않습니다.');
+        }
+      }
+
+      console.log("price : ", price)
+
       const result = await req.db.query(insertOrderQuery, [
-          req.session.user_id, totalPrice, basic_add, detail_add, postal_code, card_number, type_card, expriation_time
+          req.session.user_id, totalPrice, basic_add, detail_add, postal_code, card_number, type_card, expriation_time, price , Coupon[0].coupon_id
       ]);
       console.log('Order inserted successfully ', result);
       const orders_id = result.insertId;
+
+      // 현재 날짜 생성
+      const currentDate = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD' 형식
+      // 쿠폰을 업데이트하는 쿼리
+      await req.db.query(
+      `UPDATE coupon 
+        SET coupon_use_date = ?, coupon_use = 1 
+        WHERE coupon_id = ? AND user_id = ?`,
+      [currentDate, Coupon[0].coupon_id, req.session.user_id]
+      );
       
       //여기서 부터 orderlist
       for (const book of selectedBookList) {
@@ -662,6 +731,8 @@ router.post('/orderpage/add', async (req, res) => {
               'delete from basketlist where basket_id = ? and book_id = ?',
               [req.session.basket_id, book.book_id])
       }
+
+      
 
 
       return res.send(
