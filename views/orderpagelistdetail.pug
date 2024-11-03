@@ -1,0 +1,36 @@
+doctype html
+html
+  head
+    title orderSelectedPage
+    style.
+      table {
+        width: 50%;
+        border-collapse: collapse;
+        margin-right: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
+        text-align: left;
+      }
+    body 
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    .container
+        h1 상세 주문내역 
+        table
+            thead 
+              tr
+                th 책이름 
+                th 주문한 책 수
+                th 책 가격
+                th 각 책 총 가격
+            tbody 
+              each orderdetail in checkorderlist
+                tr
+                  td= orderdetail.book_name 
+                  td= orderdetail.orderlist_count 
+                  td= orderdetail.book_price 
+                  td= orderdetail.orderlist_count * orderdetail.book_price 

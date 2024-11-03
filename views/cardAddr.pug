@@ -1,0 +1,60 @@
+doctype html
+html
+  head
+    title card_address_page
+    style.
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+      }
+      .form-container {
+        display: flex;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 20px;
+      }
+      input {
+        margin-bottom: 10px;
+        padding: 5px;
+        width: 300px;
+      }
+      .spaced-div {
+        margin-bottom: 10px;
+      }
+  body
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    h1 이 페이지는 카드와 주소를 등록하기 위한 페이지입니다.
+    .form-container
+      form(action="/cardAddr/createcard" method="post")
+        div
+          input(type="text" name="cardNumber" placeholder="카드 번호를 입력해주세요")
+        div(class="spaced-div")
+            label(for="lang" style="padding: 5px;") 카드 종류
+            select(name="cardtype" id="lang") 
+              option(value="신용카드") 신용카드
+              option(value="체크카드") 체크카드
+              option(value="법인카드") 법인카드
+        div
+          input(type="text" name="cardExpriation" placeholder="카드유효기간을 2024-09 형태로 입력해주세요")
+        div
+          button(type="submit") 카드등록
+          
+      form(action="/cardAddr/createaddr" method="post")
+        div
+          input(type="text" name="userbasicAdd" placeholder="기본배송지를 입력해주세요")
+        div
+          input(type="text" name="userdetailAdd" placeholder="상세 배송지를 입력해주세요")
+        div
+          input(type="text" name="userPostal" placeholder="우편번호를 입력해주세요")
+        div
+          button(type="submit") 주소등록
+      form(action="/cardAddr/all" method="get")
+        div
+          button(type="submit") 카드, 주소 전체 조회
+

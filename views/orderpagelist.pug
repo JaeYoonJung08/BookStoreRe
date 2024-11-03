@@ -1,0 +1,47 @@
+doctype html
+html
+  head
+    title orderSelectedPage
+    style.
+      table {
+        width: 50%;
+        border-collapse: collapse;
+        margin-right: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+      }
+      th {
+        background-color: #f2f2f2;
+        text-align: left;
+      }
+    body 
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    .container
+        h1 주문내역 
+        table
+            thead 
+              tr
+                th 총가격 
+                th 기본주소
+                th 상세주소
+                th 우편번호
+                th 카드번호
+                th 카드종류
+                th 카드만료기간
+                th 주문시간
+                th 주문한 책 상세보기
+            tbody 
+              each order in ordersList
+                tr
+                  td= order.all_price 
+                  td= order.basic_add 
+                  td= order.detail_add 
+                  td= order.postal_code
+                  td= order.card_number 
+                  td= order.type_card 
+                  td= order.expriation_time 
+                  td= new Date(order.order_time).toLocaleString('ko-KR', {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'}).replace(/\. /g, '-').replace(' ', '')
+                  td 
+                    a(href=`/orderpagelist/${order.orders_id}`) 상세보기
