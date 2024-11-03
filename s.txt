@@ -4,3 +4,4 @@
 
 
 'SELECT * FROM coupon WHERE user_id = ? AND STR_TO_DATE(coupon_fin_time, "%Y-%m-%d") >= CURDATE() and coupon_use = 0',
+  order_point_use_date = new Date(); // 현재 날짜와 시간을 할당

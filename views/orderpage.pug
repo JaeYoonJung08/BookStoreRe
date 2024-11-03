@@ -49,6 +49,15 @@ html
               option(value=card.card_id)= `${card.type_card} 카드 - ${card.card_number} (유효기간: ${card.expriation_time})`
         else
           p 카드 정보가 없습니다.
+        h3 적립금 정보
+        if point.length
+          select(name="selectedPoint")
+            each card in point
+              - const maxPoints = Math.floor(card.point / 1000) * 1000; // 1000 단위로 최대 포인트 계산
+              each i in Array.from({ length: maxPoints / 1000 }, (_, idx) => (idx + 1) * 1000)
+                option(value=i)= `${i} 포인트 (사용 가능한 최대: ${maxPoints})`
+        else
+          p 포인트가 없습니다.
         input(type="hidden", name="totalPrice", value=all_price)
         input(type="hidden", name="selectedBookList", value=selectedBookList)
         button(type="submit") 주문하기

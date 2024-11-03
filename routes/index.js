@@ -520,7 +520,17 @@ router.post('/orderpage', async (req, res) => {
           'select * from card wherer where user_id = ?',
           [req.session.user_id]
       )
-      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList});
+
+      const point = await req.db.query(
+        'select * from user where user_id = ? and stamp >= ?'
+        ,[req.session.user_id, 10]
+      )
+
+      console.log(point)
+
+
+
+      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList, point});
   }
   catch(error)
   {
@@ -578,7 +588,13 @@ router.post('/buynow/orderpage', async (req, res) => {
           'select * from card wherer where user_id = ?',
           [req.session.user_id]
       )
-      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList});
+
+      const point = await req.db.query(
+        'select point from user where user_id = ? and point >= 1000'
+        ,[req.session.user_id]
+      )
+
+      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookLis, point});
   }
   catch(error)
   {
@@ -594,7 +610,7 @@ router.post('/buynow/orderpage', async (req, res) => {
 //  이제 주문 목록, 주문 총액, 배송지 정보, 카드 정보 보여주면서 마지막 주문
 router.post('/orderpage/add', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
-  const {totalPrice, selectedCard, selectedAddress} = req.body;
+  let {totalPrice, selectedCard, selectedAddress, selectedPoint} = req.body;
 
   let selectedBookList;
   try {
@@ -637,14 +653,41 @@ router.post('/orderpage/add', async (req, res) => {
       const { basic_add, detail_add, postal_code } = valueAddr[0];
       const { card_number, type_card, expriation_time } = valueCard[0];
       
+      //적립금 빼기
+      console.log(selectedPoint)
+      let order_point = 0;
+      if (selectedPoint)
+      {
+        order_point = totalPrice - parseInt(selectedPoint);
+      }
+      else 
+      {
+        selectedPoint = null;
+      }
       //order 테이블에 값 넣기
       const insertOrderQuery = `
       INSERT INTO orders (
-          user_id, all_price, basic_add, detail_add, postal_code, card_number, type_card, expriation_time
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+          user_id, all_price, basic_add, detail_add, postal_code, card_number, type_card, expriation_time, order_save_point, order_point, order_point_save_date, order_story, order_point_use_date, order_use_story 
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,? ,?,?,?)`;
+
+      //회원 point 적립
+      const check = await req.db.query(
+        'select * from user where user_id = ?'
+        ,[req.session.user_id]
+      )
+
+      let basic_point = check[0].point
+      let point = parseInt(totalPrice) - parseInt(parseInt(selectedPoint));
+      point = point / 10
+      await req.db.query(
+        'UPDATE user SET point = ? WHERE user_id = ?',
+        [point + parseInt(basic_point), req.session.user_id]
+      )
+
+
       
       const result = await req.db.query(insertOrderQuery, [
-          req.session.user_id, totalPrice, basic_add, detail_add, postal_code, card_number, type_card, expriation_time
+          req.session.user_id, totalPrice, basic_add, detail_add, postal_code, card_number, type_card, expriation_time, point, parseInt(selectedPoint), '2024-11-04', '주문','2024-11-04' , '주문'
       ]);
       console.log('Order inserted successfully ', result);
       const orders_id = result.insertId;
@@ -661,6 +704,26 @@ router.post('/orderpage/add', async (req, res) => {
           req.db.query(
               'delete from basketlist where basket_id = ? and book_id = ?',
               [req.session.basket_id, book.book_id])
+      }
+
+
+      if (selectedPoint)
+      {
+        let stamp = parseInt(check[0].stamp)
+        stamp = stamp - 10;
+        await req.db.query(
+          'UPDATE user SET stamp = ? WHERE user_id = ?',
+          [stamp, req.session.user_id]
+        )
+      }
+      else
+      {
+        let stamp = parseInt(check[0].stamp)
+        stamp = stamp + 1;
+        await req.db.query(
+          'UPDATE user SET stamp = ? WHERE user_id = ?',
+          [stamp, req.session.user_id]
+        )
       }
 
 
