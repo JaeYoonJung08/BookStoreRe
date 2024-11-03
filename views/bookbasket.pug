@@ -16,8 +16,58 @@ html
         background-color: #f2f2f2;
         text-align: left;
       }
+  body
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    h1 장바구니 목록
+
+    if books.length
+      // 주문하기 버튼을 위한 메인 폼 (수량 변경과 별개)
+      form(action="/orderpage", method="POST", onsubmit="calculateTotal()")
+        table
+          thead
+            tr
+              th 선택
+              th 책 ID
+              th 책 이름
+              th 가격
+              th 수량
+              th 수량 변경
+          tbody
+            each book in books
+              - const book_count = bookbasketlist.find(item => item.book_id === book.book_id).book_count
+              tr
+                td
+                  input(
+                    type="checkbox",
+                    name="selectedBooks",
+                    value=JSON.stringify({
+                      book_id: book.book_id,
+                      book_count: book_count,
+                      book_price: book.book_price,
+                      book_name: book.book_name
+                    }),
+                    onclick="calculateTotal()"
+                  )
+                td= book.book_id
+                td= book.book_name
+                td= book.book_price
+                td
+                  input(type="number", id=`book_count_${book.book_id}`, value=book_count, min="1")
+                td
+                  // 수량 변경을 위한 독립적인 버튼 (폼이 아닌 버튼으로 수정)
+                  button(
+                    type="button",
+                    onclick=`submitQuantityChange('${book.book_id}', ${book_count})`
+                  ) 수량 변경
+        input(type="hidden", id="totalPrice", name="all_price", value="0")
+        button(type="submit") 주문하기
+    else
+      p 장바구니에 담긴 책이 없습니다.
+
     script.
+      // 메인 폼의 총 가격 계산 함수
       function calculateTotal() {
+        // 총합 계산 로직 구현
         let total = 0;
         const checkboxes = document.querySelectorAll('input[name="selectedBooks"]:checked');
         checkboxes.forEach(checkbox => {
@@ -26,30 +76,170 @@ html
         });
         document.getElementById('totalPrice').value = total;
       }
-  body 
-    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
-    h1 장바구니 목록
-    if books.length
-      form(action="/orderpage", method="POST", onsubmit="calculateTotal()")
-        table
-          thead 
-            tr
-              th 선택
-              th 책 ID 
-              th 책 이름
-              th 가격
-              th 수량
-          tbody 
-            each book in books
-              - const book_count = bookbasketlist.find(item => item.book_id === book.book_id).book_count
-              tr
-                td: input(type="checkbox", name="selectedBooks", value=JSON.stringify({ book_id: book.book_id, book_count: book_count, book_price: book.book_price, book_name:book.book_name }), onclick="calculateTotal()")
-                td= book.book_id
-                td= book.book_name
-                td= book.book_price
-                td= book_count
-        input(type="hidden", id="totalPrice", name="all_price", value="0")
 
-        button(type="submit") 주문하기
-    else
-      p 장바구니에 담긴 책이 없습니다.
+      // 수량 변경 버튼 클릭 시 수량 변경 요청을 전송하는 함수
+      function submitQuantityChange(bookId, bookCount) {
+        // 새로운 폼을 생성하여 /bookbakset/change로 요청을 전송합니다.
+        const form = document.createElement('form');
+        form.action = '/bookbakset/change';
+        form.method = 'POST';
+
+        // book_id 필드를 추가합니다.
+        const bookIdInput = document.createElement('input');
+        bookIdInput.type = 'hidden';
+        bookIdInput.name = 'book_id';
+        bookIdInput.value = bookId;
+        form.appendChild(bookIdInput);
+
+        // book_count 필드를 추가합니다.
+        const bookCountInput = document.createElement('input');
+        bookCountInput.type = 'hidden';
+        bookCountInput.name = 'book_count';
+        bookCountInput.value = document.getElementById(`book_count_${bookId}`).value;
+        form.appendChild(bookCountInput);
+
+        // 폼을 문서에 추가하고 제출합니다.
+        document.body.appendChild(form);
+        form.submit();
+      }
+
+
+
+//- 수량 변경이 있지만 데이터베이스 없데이트 x
+//- doctype html
+//- html
+//-   head
+//-     title 장바구니 목록
+//-     style.
+//-       table {
+//-         width: 50%;
+//-         border-collapse: collapse;
+//-         margin-right: 20px;
+//-       }
+//-       th, td {
+//-         border: 1px solid #ddd;
+//-         padding: 8px;
+//-       }
+//-       th {
+//-         background-color: #f2f2f2;
+//-         text-align: left;
+//-       }
+//-     script.
+//-       function calculateTotal() {
+//-         let total = 0;
+//-         const checkboxes = document.querySelectorAll('input[name="selectedBooks"]:checked');
+//-         checkboxes.forEach(checkbox => {
+//-           const book = JSON.parse(checkbox.dataset.book);
+//-           total += book.book_count * book.book_price;
+//-         });
+//-         document.getElementById('totalPrice').value = total;
+//-       }
+
+//-       function updateBookCount(bookId) {
+//-         const countInput = document.querySelector(`input[data-id="count-${bookId}"]`);
+//-         const checkbox = document.querySelector(`input[data-id="book-${bookId}"]`);
+        
+//-         if (countInput && checkbox) {
+//-           const book = JSON.parse(checkbox.dataset.book);
+//-           book.book_count = parseInt(countInput.value) || 0; // 업데이트된 book_count
+//-           checkbox.dataset.book = JSON.stringify(book);
+//-           calculateTotal();
+//-         }
+//-       }
+//-   body 
+//-     a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+//-     h1 장바구니 목록
+//-     if books.length
+//-       form(action="/orderpage", method="POST", onsubmit="calculateTotal()")
+//-         table
+//-           thead 
+//-             tr
+//-               th 선택
+//-               th 책 ID 
+//-               th 책 이름
+//-               th 가격
+//-               th 수량
+//-           tbody 
+//-             each book in books
+//-               - const book_count = bookbasketlist.find(item => item.book_id === book.book_id).book_count
+//-               tr
+//-                 td: input(
+//-                   type="checkbox", 
+//-                   name="selectedBooks", 
+//-                   data-id=`book-${book.book_id}`, 
+//-                   data-book=JSON.stringify({ book_id: book.book_id, book_count: book_count, book_price: book.book_price, book_name: book.book_name }), 
+//-                   onclick="calculateTotal()"
+//-                 )
+//-                 td= book.book_id
+//-                 td= book.book_name
+//-                 td= book.book_price
+//-                 td: input(
+//-                   type="number", 
+//-                   value=book_count, 
+//-                   min="1", 
+//-                   data-id=`count-${book.book_id}`, 
+//-                   oninput=`updateBookCount(${book.book_id})`
+//-                 )
+//-         input(type="hidden", id="totalPrice", name="all_price", value="0")
+
+//-         button(type="submit") 주문하기
+//-     else
+//-       p 장바구니에 담긴 책이 없습니다.
+
+
+//- 수량 변경이 없는 pug
+//- doctype html
+//- html
+//-   head
+//-     title 장바구니 목록
+//-     style.
+//-       table {
+//-         width: 50%;
+//-         border-collapse: collapse;
+//-         margin-right: 20px;
+//-       }
+//-       th, td {
+//-         border: 1px solid #ddd;
+//-         padding: 8px;
+//-       }
+//-       th {
+//-         background-color: #f2f2f2;
+//-         text-align: left;
+//-       }
+//-     script.
+//-       function calculateTotal() {
+//-         let total = 0;
+//-         const checkboxes = document.querySelectorAll('input[name="selectedBooks"]:checked');
+//-         checkboxes.forEach(checkbox => {
+//-           const book = JSON.parse(checkbox.value);
+//-           total += book.book_count * book.book_price;
+//-         });
+//-         document.getElementById('totalPrice').value = total;
+//-       }
+//-   body 
+//-     a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+//-     h1 장바구니 목록
+//-     if books.length
+//-       form(action="/orderpage", method="POST", onsubmit="calculateTotal()")
+//-         table
+//-           thead 
+//-             tr
+//-               th 선택
+//-               th 책 ID 
+//-               th 책 이름
+//-               th 가격
+//-               th 수량
+//-           tbody 
+//-             each book in books
+//-               - const book_count = bookbasketlist.find(item => item.book_id === book.book_id).book_count
+//-               tr
+//-                 td: input(type="checkbox", name="selectedBooks", value=JSON.stringify({ book_id: book.book_id, book_count: book_count, book_price: book.book_price, book_name:book.book_name }), onclick="calculateTotal()")
+//-                 td= book.book_id
+//-                 td= book.book_name
+//-                 td= book.book_price
+//-                 td= book_count
+//-         input(type="hidden", id="totalPrice", name="all_price", value="0")
+
+//-         button(type="submit") 주문하기
+//-     else
+//-       p 장바구니에 담긴 책이 없습니다.

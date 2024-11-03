@@ -64,9 +64,10 @@ html
             input(type="text", name="book_pharse_count", placeholder="장바구니에 담을 수량을 넣어주세요")
             div 
               button(type="submit") 장바구니 추가
-        form(action="/orderpage", method="post")
+        form(action="/buynow/orderpage", method="post")
             input(type="hidden", name="selectedBooks", value=JSON.stringify({ book_id: book.book_id, book_count: book.book_count, book_price: book.book_price, book_name:book.book_name }))
             input(type="hidden", id="totalPrice", name="all_price", value="0")
+            input(type="hidden", id="bookstore_bookcount", name="bookstore_bookcount", value=book.book_count)
             input(type="text", name="book_pharse_count_buy", placeholder="즉시 주문할 수량을 넣어주세요", oninput=`calculateTotal(${book.book_price})`)
             div 
               button(type="submit", onclick="setBookCountAndSelectedBooks()") 즉시주문

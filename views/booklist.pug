@@ -33,13 +33,24 @@ html
         align-items: center;
       }
       input {
-        width : 300px;
-        margin : 10px;
-        padding : 5px;
+        width: 300px;
+        margin: 10px;
+        padding: 5px;
+      }
+      #searchInput {
+        border: 2px solid #007BFF;
+        border-radius: 4px;
+        padding: 10px;
+        width: 100%;
+        max-width: 400px;
+        margin-right : 1200px;
       }
   body
     a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
     h1 이 페이지는 책 추가와 조회를 위한 페이지입니다.
+    
+    input(type="text", id="searchInput", placeholder="책 이름을 입력하여 검색하세요.")
+    
     .container
       table
         thead
@@ -48,7 +59,7 @@ html
             th 책 수량
             th 가격
             th 상세보기
-        tbody
+        tbody(id="bookTableBody")
           each book in books
             tr
               td= book.book_name
@@ -56,6 +67,7 @@ html
               td= book.book_price
               td
                 a(href=`/booklist/${book.book_id}`) 상세보기
+                  
       form(action="/booklist/bookAdd", method="post")
         div 
           input(type="text", name="bookName", placeholder="책 이름을 작성해주세요.")
@@ -66,5 +78,18 @@ html
         div 
           button(type="submit") 책 추가
 
+    script.
+      // JavaScript로 실시간 검색 기능 구현
+      document.getElementById('searchInput').addEventListener('input', function() {
+        const searchQuery = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#bookTableBody tr');
         
-
+        rows.forEach(row => {
+          const bookName = row.querySelector('td').textContent.toLowerCase();
+          if (bookName.includes(searchQuery)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
