@@ -1,0 +1,41 @@
+doctype html
+html
+  head
+    title User Form
+    style.
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+      }
+      .form-container {
+        display: flex;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 20px;
+      }
+      input {
+        margin-bottom: 10px;
+        padding: 5px;
+        width: 200px;
+      }
+  body
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    h1 페이 사용
+    .form-container
+      form(action="/paynewnew" method="post")
+        div
+          input(type="text" name="pay_type" placeholder="충전 or 사용")
+        div
+          input(type="text" name="payuse_money" placeholder="사용금액")    
+        div
+          input(type="text" name="pay_what" placeholder="거래내용")   
+        div
+          button(type="submit") 페이
+          
+

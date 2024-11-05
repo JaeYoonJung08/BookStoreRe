@@ -49,6 +49,13 @@ html
               option(value=card.card_id)= `${card.type_card} 카드 - ${card.card_number} (유효기간: ${card.expriation_time})`
         else
           p 카드 정보가 없습니다.
+        h3 동서페이 정보
+        if pay.length
+          p 현재 잔액: #{pay[0].pay_money}원
+            input(type="hidden" name="pay_id" value=pay[0].pay_id)
+            input(type="text" name="user_input" placeholder="값을 입력하세요")
+        else
+          p 카드 정보가 없습니다.
         input(type="hidden", name="totalPrice", value=all_price)
         input(type="hidden", name="selectedBookList", value=selectedBookList)
         button(type="submit") 주문하기

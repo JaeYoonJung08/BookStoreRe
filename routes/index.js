@@ -38,6 +38,12 @@ router.post('/signin', async (req, res) => {
         ,[user_id]
       )
 
+      const pay = await req.db.query(
+        'select * from dongseopay where user_id = ?'
+        ,[user_id]
+      )
+
+      req.session.pay_id = pay[0].pay_id
       // console.log(checkbasketId.basket_id)
       req.session.user_id = user_id
       req.session.userName = userName
@@ -520,7 +526,13 @@ router.post('/orderpage', async (req, res) => {
           'select * from card wherer where user_id = ?',
           [req.session.user_id]
       )
-      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList});
+      const pay =  await req.db.query(
+        'select * from dongseopay  where pay_id = ?',
+        [req.session.pay_id]
+
+    )
+      console.log(pay)
+      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList, pay});
   }
   catch(error)
   {
@@ -578,7 +590,12 @@ router.post('/buynow/orderpage', async (req, res) => {
           'select * from card wherer where user_id = ?',
           [req.session.user_id]
       )
-      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList});
+
+      const pay =  await req.db.query(
+        'select * from dongseopay  where pay_id = ?',
+        [req.session.pay_id]
+      )
+      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList, pay});
   }
   catch(error)
   {
@@ -594,7 +611,7 @@ router.post('/buynow/orderpage', async (req, res) => {
 //  이제 주문 목록, 주문 총액, 배송지 정보, 카드 정보 보여주면서 마지막 주문
 router.post('/orderpage/add', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
-  const {totalPrice, selectedCard, selectedAddress} = req.body;
+  let {totalPrice, selectedCard, selectedAddress, pay_id, user_input} = req.body;
 
   let selectedBookList;
   try {
@@ -636,16 +653,50 @@ router.post('/orderpage/add', async (req, res) => {
       )
       const { basic_add, detail_add, postal_code } = valueAddr[0];
       const { card_number, type_card, expriation_time } = valueCard[0];
-      
+    
+      let pay_money = null;
+      let card_money = null;
+      if (user_input)
+      {
+        pay_money = parseInt(user_input)
+        totalPrice = parseInt(totalPrice) - parseInt(pay_money)
+
+        let  check = await req.db.query(
+          'select * from dongseopay where pay_id = ?',
+          [req.session.pay_id]
+        )
+        console.log(check)
+        console.log(pay_money)
+        
+        let here = parseInt(check[0].pay_money) - pay_money
+        await req.db.query(
+          'UPDATE dongseopay SET pay_money = ? WHERE pay_id = ?',
+          [here, req.session.pay_id]
+        )
+      }
+      else 
+      {
+        card_money = totalPrice
+      }
       //order 테이블에 값 넣기
       const insertOrderQuery = `
       INSERT INTO orders (
-          user_id, all_price, basic_add, detail_add, postal_code, card_number, type_card, expriation_time
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+          user_id, all_price, basic_add, detail_add, postal_code, card_number, type_card, expriation_time, card_money, pay_money 
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?)`;
       
       const result = await req.db.query(insertOrderQuery, [
-          req.session.user_id, totalPrice, basic_add, detail_add, postal_code, card_number, type_card, expriation_time
+          req.session.user_id, totalPrice, basic_add, detail_add, postal_code, card_number, type_card, expriation_time, card_money, pay_money
       ]);
+
+      if (user_input)
+      {
+
+        await req.db.query(
+          'UPDATE dongseopaylist SET pay_what = ? WHERE pay_id = ?',
+          [result.insertId, req.session.pay_id]
+        )
+      }
+
       console.log('Order inserted successfully ', result);
       const orders_id = result.insertId;
       
@@ -729,6 +780,59 @@ router.get('/orderpagelist/:orders_id', async (req, res) => {
 catch(error){
     console.log(error);
 }    
+})
+
+//--pay
+router.get('/paynew', async (req, res) => {
+  logger.info(`Request received for URL: ${req.originalUrl}`);
+    res.render('paynew');
+})
+
+router.post('/paynewnew', async (req, res) => {
+  logger.info(`Request received for URL: ${req.originalUrl}`);
+  const {pay_type, payuse_money, pay_board, pay_what} = req.body
+  try
+  {
+    const check = await req.db.query(
+      'select * from dongseopay where pay_id = ?',
+      [req.session.pay_id]
+    )
+
+    let allmoney = check[0].pay_money 
+
+    if (/사용/.test(pay_type)) {
+      allmoney = parseInt(allmoney) - parseInt(payuse_money);
+    }
+    else if(/충전/.test(pay_type))
+    {
+      allmoney = parseInt(allmoney) + parseInt(payuse_money);
+    }
+
+    await req.db.query(
+      'UPDATE dongseopay SET pay_money = ? WHERE pay_id = ?',
+      [allmoney, req.session.pay_id]
+    )
+
+    await req.db.query(
+      'INSERT INTO  dongseopaylist(pay_id, pay_type, payuse_money, pay_board, pay_what) VALUES (?, ?, ?, ?,?)',
+      [req.session.pay_id, pay_type,  parseInt(payuse_money), allmoney, pay_what]
+
+    )
+
+    return res.send(
+      `<script type="text/javascript">
+      alert("성공.");
+      location.href='/';
+        </script>`
+    );
+
+
+  }
+  catch(error)
+  {
+    console.log(error)
+  }
+    res.render('paynew');
 })
 
 module.exports = router;
