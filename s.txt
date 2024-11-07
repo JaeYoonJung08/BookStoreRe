@@ -1,0 +1,6 @@
+'UPDATE buymom SET buy_count = ? WHERE book_id = ?',
+'DELETE FROM basketlist WHERE basket_id = ? AND book_id = ?'
+'INSERT INTO buymom (book_id, yearmonth, buy_count) VALUES (?, ?, ?)',
+
+
+'SELECT * FROM coupon WHERE user_id = ? AND STR_TO_DATE(coupon_fin_time, "%Y-%m-%d") >= CURDATE() and coupon_use = 0',
