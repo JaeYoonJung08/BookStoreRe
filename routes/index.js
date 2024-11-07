@@ -3,6 +3,15 @@ var router = express.Router();
 var logger = require('../logger');
 // const { router } = require('../app');
 
+const alertAndRedirect = (res, message, redirectUrl) => {
+  res.send(`
+    <script type="text/javascript">
+      alert("${message}");
+      location.href='${redirectUrl}';
+    </script>
+  `);
+}
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   logger.info(`Request received for URL: ${req.originalUrl}`);
@@ -38,28 +47,17 @@ router.post('/signin', async (req, res) => {
         ,[user_id]
       )
 
-      // console.log(checkbasketId.basket_id)
       req.session.user_id = user_id
       req.session.userName = userName
       req.session.basket_id = checkbasketId[0].basket_id
       console.log("req.session.user_id : " + req.session.user_id)
       console.log("req.session.userName : " +req.session.userName)
       console.log("req.session.bookbasket : " +req.session.basket_id)
-      return res.send(
-        `<script type="text/javascript">
-        alert("로그인이 성공적으로 수행되었습니다.");
-        location.href='/';
-        </script>`
-      );
+      return alertAndRedirect(res, "로그인이 성공적으로 수행되었습니다", "/");
     }
     else 
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("아이디 또는 비밀번호가 올바르지 않습니다.");
-        location.href='/user';
-        </script>`
-      );
+      return alertAndRedirect(res, "아이디 또는 비밀번호가 올바르지 않습니다.", "/user");
     }
   }
   catch(error){
@@ -81,12 +79,7 @@ router.post('/signup', async (req, res) => {
     
     if (check.length > 0)
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("이미 존재하는 아이디와 비밀번호입니다.");
-        location.href='/user';
-        </script>`
-      );
+      return alertAndRedirect(res, "이미 존재하는 아이디와 비밀번호입니다.", "/user");
     }
     else 
     {
@@ -102,12 +95,7 @@ router.post('/signup', async (req, res) => {
       )
       
       console.log(insertuser);
-      return res.send(
-        `<script type="text/javascript">
-        alert("회원가입이 완료되었습니다. 다시 로그인을 진행해주세요.");
-        location.href='/user';
-        </script>`
-      );
+      return alertAndRedirect(res, "회원가입이 완료되었습니다. 다시 로그인을 진행해주세요.", "/user");
     }
   }catch(error)
   {
@@ -125,23 +113,17 @@ router.get('/cardAddr', async (req, res) => {
   }
   else 
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("로그인을 먼저 진행해주세요.");
-      location.href='/user';
-      </script>`
-    );
+    return alertAndRedirect(res, "로그인을 먼저 진행해주세요.", "/user");
   }
- 
 })
 
 //카드 추가
 router.post('/cardAddr/createcard', async (req,res)=> {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   const {cardNumber, cardExpriation, cardtype} = req.body;
-  // console.log(cardNumber)
-  // console.log(cardExpriation)
-  // console.log(cardtype)
+  console.log(cardNumber)
+  console.log(cardExpriation) 
+  console.log(cardtype)
   try {
     const check = await req.db.query(
       'select * from card where card_number = ? and user_id = ?',
@@ -149,12 +131,7 @@ router.post('/cardAddr/createcard', async (req,res)=> {
     )
     if (check.length > 0)
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("이미 존재하는 카드입니다.");
-        location.href='/cardAddr';
-        </script>`
-      );
+      return alertAndRedirect(res, "이미 존재하는 카드입니다.", "/cardAddr");
     }
     else 
     {
@@ -162,12 +139,7 @@ router.post('/cardAddr/createcard', async (req,res)=> {
         'insert into card(user_id, card_number, type_card, expriation_time) values (?,?,?,?)',
         [req.session.user_id, cardNumber, cardtype, cardExpriation]
       )
-      return res.send(
-        `<script type="text/javascript">
-        alert("카드 입력이 완료되었습니다");
-        location.href='/';
-        </script>`
-      );
+      return alertAndRedirect(res, "카드 입력이 완료되었습니다.", "/");
     }
   }
   catch(error)
@@ -188,12 +160,7 @@ router.post('/cardAddr/createaddr', async (req,res)=> {
 
     if (check.length > 0)
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("이미 등록된 주소입니다.");
-        location.href='/';
-        </script>`
-      );
+      return alertAndRedirect(res, "이미 등록된 주소입니다.", "/");
     }
     else
     {
@@ -201,12 +168,7 @@ router.post('/cardAddr/createaddr', async (req,res)=> {
         'insert into addr(user_id, postal_code, basic_add, detail_add) values (?,?,?,?)'
         ,[req.session.user_id, userPostal, userbasicAdd, userdetailAdd]
       )
-      return res.send(
-        `<script type="text/javascript">
-        alert("주소가 등록 되었습니다.");
-        location.href='/';
-        </script>`
-      );
+      return alertAndRedirect(res, "주소가 등록 되었습니다.", "/");
     }
   }
   catch(error)
@@ -215,8 +177,7 @@ router.post('/cardAddr/createaddr', async (req,res)=> {
   }
 })
 
-// 카드, 주소 전체 조화 
-// /cardAddr/all
+// 카드, 주소 전체 조회,  /cardAddr/all
 router.get('/cardAddr/all', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   try
@@ -236,11 +197,7 @@ router.get('/cardAddr/all', async (req, res) => {
   catch (error)
   {
       console.log(error);
-      return res.send(
-          `<script type="text/javascript">
-          alert("데이터베이스 오류입니다.");
-          location.href='/cardAddr';
-          </script>`)
+      return alertAndRedirect(res, "데이터베이스 오류입니다.", "/cardAddr");
   }
 })
 
@@ -258,11 +215,7 @@ router.post('/booklist/bookAdd', async (req, res) => {
   const {bookName, bookCount, bookPrice} = req.body;
   if (bookName.length === 0 || parseInt(bookCount) <= 0 || parseInt(bookPrice) <= 0)
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("입력을 다시 해주세요");
-      location.href='/booklist';
-      </script>`)
+    return alertAndRedirect(res, "입력을 다시 해주세요.", "/booklist");
   }
   try
   {
@@ -277,11 +230,7 @@ router.post('/booklist/bookAdd', async (req, res) => {
         'insert into booklist(book_name, book_count, book_price) values(?,?,?)',
         [bookName, parseInt(bookCount), parseInt(bookPrice)]
       )
-      return res.send(
-        `<script type="text/javascript">
-        alert("책이 추가 되었습니다.");
-        location.href='/booklist';
-        </script>`)
+      return alertAndRedirect(res, "책이 추가 되었습니다.", "/booklist");
     }
     else 
     {
@@ -294,12 +243,7 @@ router.post('/booklist/bookAdd', async (req, res) => {
           'update booklist set book_count = ? where book_id = ?',
           [sum, book_id]
       )
-      return res.send(
-          `<script type="text/javascript">
-          alert("책의 수량이 추가 되었습니다.");
-          location.href='/booklist';
-          </script>`
-      );
+      return alertAndRedirect(res, "책의 수량이 추가 되었습니다.", "/booklist");
     }
   }
   catch(error)
@@ -334,24 +278,13 @@ router.post('/booklist/basketAdd', async (req,res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   if (!req.session.user_id)
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("로그인을 먼저 진행해주세요");
-      location.href='/booklist';
-      </script>`
-    );
+    return alertAndRedirect(res, "로그인을 먼저 진행해주세요", "/booklist");
   }
-
   //주문할 수량이 더 많을 경우 처리
   const {book_id, book_count, book_pharse_count} = req.body
   if (parseInt(book_pharse_count) > parseInt(book_count))
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("장바구니에 담을 수량이 기본 수량 보다 많습니다.");
-      location.href='/booklist';
-      </script>`
-    );
+    return alertAndRedirect(res, "장바구니에 담을 수량이 기본 수량 보다 많습니다.", "/booklist");
   }
 
   try 
@@ -360,13 +293,7 @@ router.post('/booklist/basketAdd', async (req,res) => {
       'insert into basketlist(basket_id, book_id, book_count) values (?,?,?)'
       ,[parseInt(req.session.basket_id), parseInt(book_id), parseInt(book_pharse_count)]
     )
-    return res.send(
-      `<script type="text/javascript">
-      alert("장바구니에 추가 하였습니다.");
-      location.href='/booklist';
-      </script>`
-    );
-
+    return alertAndRedirect(res, "장바구니에 추가 하였습니다.", "/booklist");
   }
   catch(error)
   {
@@ -380,12 +307,7 @@ router.get('/bookbasket', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   if (!req.session.user_id)
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("로그인을 먼저 진행해주세요");
-      location.href='/';
-      </script>`
-    );
+    return alertAndRedirect(res, "로그인을 먼저 진행해주세요", "/");
   }
   try
   {
@@ -436,12 +358,7 @@ router.post('/bookbakset/change', async (req,res) => {
     console.log(check[0].book_count)
     if (parseInt(check[0].book_count) < parseInt(book_count))
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("장바구니 수량이 도서의 수량 보다 많습니다.");
-        location.href='/bookbasket';
-        </script>`
-      );
+      return alertAndRedirect(res, "장바구니 수량이 도서의 수량 보다 많습니다.", "/bookbasket");
     }
 
     //book_count가 변경된 수량임
@@ -450,13 +367,7 @@ router.post('/bookbakset/change', async (req,res) => {
       'update basketlist set book_count = ? where basket_id = ? and book_id = ?'
       ,[parseInt(book_count), req.session.basket_id ,book_id]
     ) 
-
-    return res.send(
-      `<script type="text/javascript">
-      alert("수량이 변경되었습니다");
-      location.href='/bookbasket';
-      </script>`
-    );
+    return alertAndRedirect(res, "수량이 변경되었습니다.", "/bookbasket");
   }
   catch(error)
   {
@@ -473,13 +384,7 @@ router.post('/bookbasket/delete', async (req, res)=> {
       'DELETE FROM basketlist WHERE basket_id = ? AND book_id = ?'
       ,[req.session.basket_id, book_id]
     )
-    return res.send(
-      `<script type="text/javascript">
-      alert("삭제되었습니다.");
-      location.href='/bookbasket';
-      </script>`
-    );
-
+    return alertAndRedirect(res, "삭제되었습니다.", "/bookbasket");
   }catch(error)
   {
     console.log(error)
@@ -498,11 +403,7 @@ router.post('/orderpage', async (req, res) => {
   console.log("selectedBooks : " + selectedBooks)
   //선택된 책이 없을 때
   if (!selectedBooks) {
-      return res.send(
-          `<script type="text/javascript">
-          alert("주문할 책을 선택해주세요.");
-          location.href='/bookbasket';
-          </script>`);
+      return alertAndRedirect(res, "주문할 책을 선택해주세요.", "/bookbasket");
   }
   const selectedBookList = Array.isArray(selectedBooks) ? selectedBooks.map(book => JSON.parse(book)) : [JSON.parse(selectedBooks)];
 
@@ -525,11 +426,7 @@ router.post('/orderpage', async (req, res) => {
   catch(error)
   {
     console.log(error)
-    res.send(
-      `<script type="text/javascript">
-      alert("주문 처리 중 오류가 발생했습니다.");
-      location.href='/';
-      </script>`);
+    return alertAndRedirect(res, "주문 처리 중 오류가 발생했습니다.", "/");
   }
 })
 
@@ -540,11 +437,7 @@ router.post('/buynow/orderpage', async (req, res) => {
   console.log("bookstore_bookcount : " + bookstore_bookcount)
   //선택된 책이 없을 때
   if (!selectedBooks) {
-      return res.send(
-          `<script type="text/javascript">
-          alert("주문할 책을 선택해주세요.");
-          location.href='/';
-          </script>`);
+    return alertAndRedirect(res, "주문할 책을 선택해주세요.", "/");
   }
   const selectedBookList = Array.isArray(selectedBooks) ? selectedBooks.map(book => JSON.parse(book)) : [JSON.parse(selectedBooks)];
   
@@ -556,11 +449,7 @@ router.post('/buynow/orderpage', async (req, res) => {
   // bookstore_bookcount_num 이건 서점에 있는 책
   if (parseInt(selectedBookList[0].book_count) > bookstore_bookcount_num)
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("즉시 주문할 수량이 책의 기본 수량 보다 많습니다.");
-      location.href='/booklist';
-      </script>`);
+    return alertAndRedirect(res, "즉시 주문할 수량이 책의 기본 수량 보다 많습니다.", "/booklist");
   }
   
 
@@ -583,11 +472,7 @@ router.post('/buynow/orderpage', async (req, res) => {
   catch(error)
   {
     console.log(error)
-    res.send(
-      `<script type="text/javascript">
-      alert("주문 처리 중 오류가 발생했습니다.");
-      location.href='/';
-      </script>`);
+    return alertAndRedirect(res, "주문 처리 중 오류가 발생했습니다.", "/");
   }
 })
 
@@ -663,23 +548,11 @@ router.post('/orderpage/add', async (req, res) => {
               [req.session.basket_id, book.book_id])
       }
 
-
-      return res.send(
-          `<script type="text/javascript">
-          alert("주문이 성공적으로 처리되었습니다.");
-          location.href='/';
-          </script>`
-      );
-
+      return alertAndRedirect(res, "주문이 성공적으로 처리되었습니다.", "/");
   }
   catch(error){
       console.log(error);
-      return res.send(
-          `<script type="text/javascript">
-          alert("주문 처리 중 오류가 발생했습니다.");
-          location.href='/';
-          </script>`
-      );
+      return alertAndRedirect(res, "주문 처리 중 오류가 발생했습니다.", "/");
   }
 })
 
@@ -689,12 +562,7 @@ router.get('/orderpagelist', async (req, res) => {
 
   if (!req.session.user_id || !req.session.basket_id)
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("로그인을 먼저 해주세요.");
-      location.href='/';
-        </script>`
-    );
+    return alertAndRedirect(res, "로그인을 먼저 해주세요.", "/");
   }
 
   try
