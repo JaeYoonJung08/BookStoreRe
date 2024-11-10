@@ -3,6 +3,15 @@ var router = express.Router();
 var logger = require('../logger');
 // const { router } = require('../app');
 
+const alertAndRedirect = (res, message, redirectUrl) => {
+  res.send(`
+    <script type="text/javascript">
+      alert("${message}");
+      location.href='${redirectUrl}';
+    </script>
+  `);
+}
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   logger.info(`Request received for URL: ${req.originalUrl}`);
@@ -38,28 +47,17 @@ router.post('/signin', async (req, res) => {
         ,[user_id]
       )
 
-      // console.log(checkbasketId.basket_id)
       req.session.user_id = user_id
       req.session.userName = userName
       req.session.basket_id = checkbasketId[0].basket_id
       console.log("req.session.user_id : " + req.session.user_id)
       console.log("req.session.userName : " +req.session.userName)
       console.log("req.session.bookbasket : " +req.session.basket_id)
-      return res.send(
-        `<script type="text/javascript">
-        alert("로그인이 성공적으로 수행되었습니다.");
-        location.href='/';
-        </script>`
-      );
+      return alertAndRedirect(res, "로그인이 성공적으로 수행되었습니다", "/");
     }
     else 
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("아이디 또는 비밀번호가 올바르지 않습니다.");
-        location.href='/user';
-        </script>`
-      );
+      return alertAndRedirect(res, "아이디 또는 비밀번호가 올바르지 않습니다.", "/user");
     }
   }
   catch(error){
@@ -81,12 +79,7 @@ router.post('/signup', async (req, res) => {
     
     if (check.length > 0)
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("이미 존재하는 아이디와 비밀번호입니다.");
-        location.href='/user';
-        </script>`
-      );
+      return alertAndRedirect(res, "이미 존재하는 아이디와 비밀번호입니다.", "/user");
     }
     else 
     {
@@ -102,12 +95,7 @@ router.post('/signup', async (req, res) => {
       )
       
       console.log(insertuser);
-      return res.send(
-        `<script type="text/javascript">
-        alert("회원가입이 완료되었습니다. 다시 로그인을 진행해주세요.");
-        location.href='/user';
-        </script>`
-      );
+      return alertAndRedirect(res, "회원가입이 완료되었습니다. 다시 로그인을 진행해주세요.", "/user");
     }
   }catch(error)
   {
@@ -121,27 +109,21 @@ router.get('/cardAddr', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   if (req.session.user_id > 0)
   {
-    res.render('cardAddr');
+    return res.render('cardAddr');
   }
   else 
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("로그인을 먼저 진행해주세요.");
-      location.href='/user';
-      </script>`
-    );
+    return alertAndRedirect(res, "로그인을 먼저 진행해주세요.", "/user");
   }
- 
 })
 
 //카드 추가
 router.post('/cardAddr/createcard', async (req,res)=> {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   const {cardNumber, cardExpriation, cardtype} = req.body;
-  // console.log(cardNumber)
-  // console.log(cardExpriation)
-  // console.log(cardtype)
+  console.log(cardNumber)
+  console.log(cardExpriation) 
+  console.log(cardtype)
   try {
     const check = await req.db.query(
       'select * from card where card_number = ? and user_id = ?',
@@ -149,12 +131,7 @@ router.post('/cardAddr/createcard', async (req,res)=> {
     )
     if (check.length > 0)
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("이미 존재하는 카드입니다.");
-        location.href='/cardAddr';
-        </script>`
-      );
+      return alertAndRedirect(res, "이미 존재하는 카드입니다.", "/cardAddr");
     }
     else 
     {
@@ -162,12 +139,7 @@ router.post('/cardAddr/createcard', async (req,res)=> {
         'insert into card(user_id, card_number, type_card, expriation_time) values (?,?,?,?)',
         [req.session.user_id, cardNumber, cardtype, cardExpriation]
       )
-      return res.send(
-        `<script type="text/javascript">
-        alert("카드 입력이 완료되었습니다");
-        location.href='/';
-        </script>`
-      );
+      return alertAndRedirect(res, "카드 입력이 완료되었습니다.", "/");
     }
   }
   catch(error)
@@ -188,12 +160,7 @@ router.post('/cardAddr/createaddr', async (req,res)=> {
 
     if (check.length > 0)
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("이미 등록된 주소입니다.");
-        location.href='/';
-        </script>`
-      );
+      return alertAndRedirect(res, "이미 등록된 주소입니다.", "/");
     }
     else
     {
@@ -201,12 +168,7 @@ router.post('/cardAddr/createaddr', async (req,res)=> {
         'insert into addr(user_id, postal_code, basic_add, detail_add) values (?,?,?,?)'
         ,[req.session.user_id, userPostal, userbasicAdd, userdetailAdd]
       )
-      return res.send(
-        `<script type="text/javascript">
-        alert("주소가 등록 되었습니다.");
-        location.href='/';
-        </script>`
-      );
+      return alertAndRedirect(res, "주소가 등록 되었습니다.", "/");
     }
   }
   catch(error)
@@ -215,8 +177,7 @@ router.post('/cardAddr/createaddr', async (req,res)=> {
   }
 })
 
-// 카드, 주소 전체 조화 
-// /cardAddr/all
+// 카드, 주소 전체 조회,  /cardAddr/all
 router.get('/cardAddr/all', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   try
@@ -236,11 +197,7 @@ router.get('/cardAddr/all', async (req, res) => {
   catch (error)
   {
       console.log(error);
-      return res.send(
-          `<script type="text/javascript">
-          alert("데이터베이스 오류입니다.");
-          location.href='/cardAddr';
-          </script>`)
+      return alertAndRedirect(res, "데이터베이스 오류입니다.", "/cardAddr");
   }
 })
 
@@ -258,11 +215,7 @@ router.post('/booklist/bookAdd', async (req, res) => {
   const {bookName, bookCount, bookPrice} = req.body;
   if (bookName.length === 0 || parseInt(bookCount) <= 0 || parseInt(bookPrice) <= 0)
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("입력을 다시 해주세요");
-      location.href='/booklist';
-      </script>`)
+    return alertAndRedirect(res, "입력을 다시 해주세요.", "/booklist");
   }
   try
   {
@@ -277,11 +230,7 @@ router.post('/booklist/bookAdd', async (req, res) => {
         'insert into booklist(book_name, book_count, book_price) values(?,?,?)',
         [bookName, parseInt(bookCount), parseInt(bookPrice)]
       )
-      return res.send(
-        `<script type="text/javascript">
-        alert("책이 추가 되었습니다.");
-        location.href='/booklist';
-        </script>`)
+      return alertAndRedirect(res, "책이 추가 되었습니다.", "/booklist");
     }
     else 
     {
@@ -294,12 +243,7 @@ router.post('/booklist/bookAdd', async (req, res) => {
           'update booklist set book_count = ? where book_id = ?',
           [sum, book_id]
       )
-      return res.send(
-          `<script type="text/javascript">
-          alert("책의 수량이 추가 되었습니다.");
-          location.href='/booklist';
-          </script>`
-      );
+      return alertAndRedirect(res, "책의 수량이 추가 되었습니다.", "/booklist");
     }
   }
   catch(error)
@@ -334,39 +278,24 @@ router.post('/booklist/basketAdd', async (req,res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   if (!req.session.user_id)
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("로그인을 먼저 진행해주세요");
-      location.href='/booklist';
-      </script>`
-    );
+    return alertAndRedirect(res, "로그인을 먼저 진행해주세요", "/booklist");
   }
-
   //주문할 수량이 더 많을 경우 처리
+  //book_count -> 현재 책의 수량, book_pharse_count -> 선택한 수량
   const {book_id, book_count, book_pharse_count} = req.body
   if (parseInt(book_pharse_count) > parseInt(book_count))
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("장바구니에 담을 수량이 기본 수량 보다 많습니다.");
-      location.href='/booklist';
-      </script>`
-    );
+    return alertAndRedirect(res, "장바구니에 담을 수량이 기본 수량 보다 많습니다.", "/booklist");
   }
 
   try 
   {
+    //장바구니에 넣기
     await req.db.query(
       'insert into basketlist(basket_id, book_id, book_count) values (?,?,?)'
       ,[parseInt(req.session.basket_id), parseInt(book_id), parseInt(book_pharse_count)]
     )
-    return res.send(
-      `<script type="text/javascript">
-      alert("장바구니에 추가 하였습니다.");
-      location.href='/booklist';
-      </script>`
-    );
-
+    return alertAndRedirect(res, "장바구니에 추가 하였습니다.", "/booklist");
   }
   catch(error)
   {
@@ -380,39 +309,18 @@ router.get('/bookbasket', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   if (!req.session.user_id)
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("로그인을 먼저 진행해주세요");
-      location.href='/';
-      </script>`
-    );
+    return alertAndRedirect(res, "로그인을 먼저 진행해주세요", "/");
   }
   try
   {
-      const bookbasketlist = await req.db.query(
-        'select * from basketlist where basket_id = ?',
-        [req.session.basket_id]
-    )    
+      const books = await req.db.query
+      ('select booklist.book_id, booklist.book_name, booklist.book_price, booklist.book_count, basketlist.book_count as book_choice_count from basketlist \
+        inner join booklist on basketlist.book_id = booklist.book_id \
+        where basketlist.basket_id = ?',[req.session.basket_id])
+      console.log(books);  
       // 장바구니에 책이 있는 경우
-      if (bookbasketlist.length > 0) {
-          // req.session.basket_id = bookbasketlist[0].basket_id;
-
-          // 장바구니에 담긴 모든 book_id를 배열로 만듦
-          const bookIds = bookbasketlist.map(item => item.book_id);
-          console.log(bookIds);
-          // book_id에 해당하는 책 정보를 booklist 테이블에서 조회
-          const books = await req.db.query(
-              'SELECT * FROM booklist WHERE book_id IN (?)',
-              [bookIds]
-          );
-
-          console.log("books : " , books);
-          return res.render('bookbasket', { books, bookbasketlist });
-      }
-      else 
-      {
-          return res.render('bookbasket', { books: [], bookbasketlist: [] });
-      }
+      if (books.length > 0) { return res.render('bookbasket', { books });}
+      else { return res.render('bookbasket', { books: []});}
   }
   catch(error)
   {
@@ -423,40 +331,19 @@ router.get('/bookbasket', async (req, res) => {
 //장바구니에서 수량 변경하기, 변경 쿼리
 router.post('/bookbakset/change', async (req,res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
-  const {book_id, book_count} = req.body
-  console.log(book_id, book_count)
-
+  const {book_id, book_change_count, book_count} = req.body
+  console.log(book_id, book_change_count , book_count)
   try
   {
-    //여기서 장바구니 수량이 기본 보다 많으면 안 됨
-    const check = await req.db.query(
-      'select book_count from booklist where book_id = ?'
-      ,[parseInt(book_id)]
-    )
-    console.log(check[0].book_count)
-    if (parseInt(check[0].book_count) < parseInt(book_count))
+    if (parseInt(book_count) < parseInt(book_change_count))
     {
-      return res.send(
-        `<script type="text/javascript">
-        alert("장바구니 수량이 도서의 수량 보다 많습니다.");
-        location.href='/bookbasket';
-        </script>`
-      );
+      return alertAndRedirect(res, "장바구니 수량이 도서의 수량 보다 많습니다.", "/bookbasket");
     }
-
-    //book_count가 변경된 수량임
-    //basketlist tabled에서 book_count를 변경시켜주어야함.
     await req.db.query(
       'update basketlist set book_count = ? where basket_id = ? and book_id = ?'
-      ,[parseInt(book_count), req.session.basket_id ,book_id]
+      ,[parseInt(book_change_count), req.session.basket_id ,book_id]
     ) 
-
-    return res.send(
-      `<script type="text/javascript">
-      alert("수량이 변경되었습니다");
-      location.href='/bookbasket';
-      </script>`
-    );
+    return alertAndRedirect(res, "수량이 변경되었습니다.", "/bookbasket");
   }
   catch(error)
   {
@@ -469,24 +356,14 @@ router.post('/bookbasket/delete', async (req, res)=> {
   const {book_id} = req.body
   try
   {
-    req.db.query(
-      'DELETE FROM basketlist WHERE basket_id = ? AND book_id = ?'
-      ,[req.session.basket_id, book_id]
-    )
-    return res.send(
-      `<script type="text/javascript">
-      alert("삭제되었습니다.");
-      location.href='/bookbasket';
-      </script>`
-    );
-
+    await req.db.query(
+      'DELETE FROM basketlist WHERE basket_id = ? AND book_id = ?' ,[req.session.basket_id, book_id])
+    return alertAndRedirect(res, "삭제되었습니다.", "/bookbasket");
   }catch(error)
   {
     console.log(error)
   }
 })
-
-
 
 
 // ----------------------------------------------------------- 주문하기 -------------------------------------------------------
@@ -495,148 +372,73 @@ router.post('/bookbasket/delete', async (req, res)=> {
 router.post('/orderpage', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
   const {selectedBooks, all_price} = req.body
-  console.log("selectedBooks : " + selectedBooks)
+  console.log("selectedBooks : " + selectedBooks); console.log("all_price : " + all_price);
   //선택된 책이 없을 때
   if (!selectedBooks) {
-      return res.send(
-          `<script type="text/javascript">
-          alert("주문할 책을 선택해주세요.");
-          location.href='/bookbasket';
-          </script>`);
+      return alertAndRedirect(res, "주문할 책을 선택해주세요.", "/bookbasket");
   }
   const selectedBookList = Array.isArray(selectedBooks) ? selectedBooks.map(book => JSON.parse(book)) : [JSON.parse(selectedBooks)];
-
-  // console.log("selectedBookList : " + selectedBookList)
-  console.log("all_price : " + all_price);
   try
   {
       //기본 배송지, 상세 배송지, 우편 번호
-      const UserAddr = await req.db.query(
-        'select * from addr where user_id = ?',
-        [req.session.user_id]
-      )
+      const UserAddr = await req.db.query('select * from addr where user_id = ?', [req.session.user_id])
       //카드번호, 카드 종류, 카드 유효기간 
-      const UserCard = await req.db.query(
-          'select * from card wherer where user_id = ?',
-          [req.session.user_id]
-      )
+      const UserCard = await req.db.query('select * from card wherer where user_id = ?', [req.session.user_id])
       res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList});
   }
   catch(error)
   {
-    console.log(error)
-    res.send(
-      `<script type="text/javascript">
-      alert("주문 처리 중 오류가 발생했습니다.");
-      location.href='/';
-      </script>`);
+    console.log(error); return alertAndRedirect(res, "주문 처리 중 오류가 발생했습니다.", "/");
   }
 })
 
 router.post('/buynow/orderpage', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
-  const {selectedBooks, all_price, bookstore_bookcount} = req.body
-  console.log("selectedBooks : " + selectedBooks)
-  console.log("bookstore_bookcount : " + bookstore_bookcount)
+  const {selectedBook, all_price, book_count, book_pharse_count_buy} = req.body
+  
+  console.log("selectedBook : " + selectedBook); console.log("book_count : " + book_count); console.log("all_price : " + all_price); console.log("book_pharse_count_buy : " + book_pharse_count_buy)
   //선택된 책이 없을 때
-  if (!selectedBooks) {
-      return res.send(
-          `<script type="text/javascript">
-          alert("주문할 책을 선택해주세요.");
-          location.href='/';
-          </script>`);
+  if (!selectedBook) {
+    return alertAndRedirect(res, "주문할 책을 선택해주세요.", "/");
   }
-  const selectedBookList = Array.isArray(selectedBooks) ? selectedBooks.map(book => JSON.parse(book)) : [JSON.parse(selectedBooks)];
-  
-  //책 수량 보다 즉지 주문할 수량 보다 적을 때
-  const bookstore_bookcount_num = parseInt(bookstore_bookcount)
-  console.log(parseInt(selectedBookList[0].book_count))
-  console.log(bookstore_bookcount_num)
-  //selectedBookList[0].book_count -> 이게 내가 선택
-  // bookstore_bookcount_num 이건 서점에 있는 책
-  if (parseInt(selectedBookList[0].book_count) > bookstore_bookcount_num)
-  {
-    return res.send(
-      `<script type="text/javascript">
-      alert("즉시 주문할 수량이 책의 기본 수량 보다 많습니다.");
-      location.href='/booklist';
-      </script>`);
-  }
-  
+  const selectedBookList = Array.isArray(selectedBook) ? selectedBook.map(book => JSON.parse(book)) : [JSON.parse(selectedBook)];
 
-  // console.log("selectedBookList : " + selectedBookList)
-  console.log("all_price : " + all_price);
+  //책 수량 보다 즉지 주문할 수량 보다 적을 때, book_pharse_count_buy -> 이게 내가 선택, book_count 이건 서점에 있는 책
+  if (parseInt(book_pharse_count_buy) > parseInt(book_count))
+  {
+    return alertAndRedirect(res, "즉시 주문할 수량이 책의 기본 수량 보다 많습니다.", "/booklist");
+  }
+  selectedBookList[0].book_count = parseInt(book_pharse_count_buy)
   try
   {
       //기본 배송지, 상세 배송지, 우편 번호
-      const UserAddr = await req.db.query(
-        'select * from addr where user_id = ?',
-        [req.session.user_id]
-      )
+      const UserAddr = await req.db.query('select * from addr where user_id = ?', [req.session.user_id])
       //카드번호, 카드 종류, 카드 유효기간 
-      const UserCard = await req.db.query(
-          'select * from card wherer where user_id = ?',
-          [req.session.user_id]
-      )
+      const UserCard = await req.db.query('select * from card wherer where user_id = ?',[req.session.user_id])
       res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList});
   }
   catch(error)
   {
-    console.log(error)
-    res.send(
-      `<script type="text/javascript">
-      alert("주문 처리 중 오류가 발생했습니다.");
-      location.href='/';
-      </script>`);
+    console.log(error); return alertAndRedirect(res, "주문 처리 중 오류가 발생했습니다.", "/");
   }
 })
 
 //  이제 주문 목록, 주문 총액, 배송지 정보, 카드 정보 보여주면서 마지막 주문
 router.post('/orderpage/add', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
-  const {totalPrice, selectedCard, selectedAddress} = req.body;
-
-  let selectedBookList;
-  try {
-      selectedBookList = JSON.parse(req.body.selectedBookList);
-  } catch (e) {
-      selectedBookList = req.body.selectedBookList;
-  }
-
-  console.log("totalPrice : ", totalPrice);
-  console.log("selectedCard : ", selectedCard);
-  console.log("selectedAddress : ", selectedAddress);
-  console.log("selectedBookList : ", selectedBookList);
-
+  let {totalPrice,  selectedBookList, selectedAddress, selectedCard } = req.body;
+  console.log("totalPrice : ", totalPrice); console.log("selectedCard : ", selectedCard); console.log("selectedAddress : ", selectedAddress); console.log("selectedBookList : ", selectedBookList);
+  selectedBookList = JSON.parse(selectedBookList);
+  selectedAddress = JSON.parse(selectedAddress);
+  selectedCard = JSON.parse(selectedCard);
   try{
       //주문시킨 책 만큼 책 개수 감소 //반복문!!!!!!!!!!!!!!!!!!!
-      const bookCounts = selectedBookList.map(book => book.book_count);
       for (let book of selectedBookList) {
-          const { book_id, book_count } = book;
-          const rows = await req.db.query('SELECT book_count FROM booklist WHERE book_id = ?', [book_id]);
-          const currentCount = rows[0].book_count;
-
           // Calculate the new book count
-          const newCount = parseInt(currentCount) - parseInt(book_count);
-
+          const newCount = parseInt(book.book_count) - parseInt(book.book_choice_count) 
           // Update the book count in the database
-          await req.db.query('UPDATE booklist SET book_count = ? WHERE book_id = ?', [newCount, book_id]);
+          await req.db.query('UPDATE booklist SET book_count = ? WHERE book_id = ?', [newCount, book.book_id]);
       }
-
-      //사용자 주소
-      const valueAddr = await req.db.query(
-          'select basic_add, detail_add, postal_code from addr where addr_id = ?', 
-          [selectedAddress]
-      )
-
-      //사용자 카드
-      const valueCard = await req.db.query(
-          'select card_number, type_card, expriation_time from card where card_id = ?', 
-          [selectedCard]
-      )
-      const { basic_add, detail_add, postal_code } = valueAddr[0];
-      const { card_number, type_card, expriation_time } = valueCard[0];
-      
       //order 테이블에 값 넣기
       const insertOrderQuery = `
       INSERT INTO orders (
@@ -644,42 +446,23 @@ router.post('/orderpage/add', async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
       
       const result = await req.db.query(insertOrderQuery, [
-          req.session.user_id, totalPrice, basic_add, detail_add, postal_code, card_number, type_card, expriation_time
+          req.session.user_id, totalPrice, 
+          selectedAddress.basic_add, selectedAddress.detail_add, selectedAddress.postal_code, 
+          selectedCard.card_number, selectedCard.type_card, selectedCard.expriation_time
       ]);
       console.log('Order inserted successfully ', result);
       const orders_id = result.insertId;
-      
-      //여기서 부터 orderlist
+      //여기서 부터 orderlist에 주문수량 넣어주어야함
       for (const book of selectedBookList) {
-          const insertOrderListQuery = `
-              INSERT INTO orderlist (orders_id, book_id, orderlist_count)
-              VALUES (?, ?, ?)
-          `;
-          await req.db.query(insertOrderListQuery, [orders_id, book.book_id, book.book_count]);
-
+          const insertOrderListQuery = `INSERT INTO orderlist (orders_id, book_id, orderlist_count)VALUES (?, ?, ?)`;
+          await req.db.query(insertOrderListQuery, [orders_id, book.book_id, book.book_choice_count]);
           //주문을 했으니 장바구니에서 없애주어야함. -> req.session.basket_id과 주문한 selectedBookList이용
-          req.db.query(
-              'delete from basketlist where basket_id = ? and book_id = ?',
-              [req.session.basket_id, book.book_id])
+          await req.db.query('delete from basketlist where basket_id = ? and book_id = ?',[req.session.basket_id, book.book_id])
       }
-
-
-      return res.send(
-          `<script type="text/javascript">
-          alert("주문이 성공적으로 처리되었습니다.");
-          location.href='/';
-          </script>`
-      );
-
+      return alertAndRedirect(res, "주문이 성공적으로 처리되었습니다.", "/");
   }
   catch(error){
-      console.log(error);
-      return res.send(
-          `<script type="text/javascript">
-          alert("주문 처리 중 오류가 발생했습니다.");
-          location.href='/';
-          </script>`
-      );
+      console.log(error); return alertAndRedirect(res, "주문 처리 중 오류가 발생했습니다.", "/");
   }
 })
 
@@ -689,12 +472,7 @@ router.get('/orderpagelist', async (req, res) => {
 
   if (!req.session.user_id || !req.session.basket_id)
   {
-    return res.send(
-      `<script type="text/javascript">
-      alert("로그인을 먼저 해주세요.");
-      location.href='/';
-        </script>`
-    );
+    return alertAndRedirect(res, "로그인을 먼저 해주세요.", "/");
   }
 
   try

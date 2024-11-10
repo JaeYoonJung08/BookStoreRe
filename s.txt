@@ -1,6 +1,37 @@
-'UPDATE buymom SET buy_count = ? WHERE book_id = ?',
+///////////// UPDATE /////////////////
+'UPDATE buymom SET buy_count = ? WHERE book_id = ?'
+'update basketlist set book_count = ? where basket_id = ? and book_id = ?'
+'update basketlist set book_count = ? where basket_id = ? and book_id = ?'
+
+///////////// DELETE /////////////////
 'DELETE FROM basketlist WHERE basket_id = ? AND book_id = ?'
+
+///////////// INSERT /////////////////
+insertuser.insertId
 'INSERT INTO buymom (book_id, yearmonth, buy_count) VALUES (?, ?, ?)',
+'insert into basketlist(basket_id, book_id, book_count) values (?,?,?)'
+
+///////////// SELECT /////////////////
+'SELECT * FROM coupon WHERE user_id = ? AND STR_TO_DATE(coupon_fin_time, "%Y-%m-%d") >= CURDATE() and coupon_use = 0'
+'select * from user where password = ? and name = ?'
+
+              IN
+- 장바구니에 담긴 모든 book_id를 배열로 만듦
+const bookbasketlist = await req.db.query('select * from basketlist where basket_id = ?', [req.session.basket_id])    
+const bookIds = bookbasketlist.map(item => item.book_id);
+// book_id에 해당하는 책 정보를 booklist 테이블에서 조회
+'SELECT * FROM booklist WHERE book_id IN (?)', [bookIds]
+res.render('bookbasket', { books: [], bookbasketlist: [] });
 
 
-'SELECT * FROM coupon WHERE user_id = ? AND STR_TO_DATE(coupon_fin_time, "%Y-%m-%d") >= CURDATE() and coupon_use = 0',
+// inner join///
+'select booklist.book_id, booklist.book_name, booklist.book_price, basketlist.book_count from basketlist \
+        inner join booklist on basketlist.book_id = booklist.book_id \
+        where basketlist.basket_id = ?'
+
+
+///////////// session /////////////////
+req.session.user_id = user_id
+req.session.userName = userName
+req.session.basket_id = checkbasketId[0].basket_id
+
