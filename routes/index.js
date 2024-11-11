@@ -13,8 +13,19 @@ const alertAndRedirect = (res, message, redirectUrl) => {
 }
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
+router.get('/', async (req, res, next) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
+  try
+  {
+    const awd = await req.db.query(
+      'INSERT INTO 동서페이테이블(user_id, 거래내역, 구매내역, 동서페이) VALUES (?,?,?,?)',
+      [1, "정재윤", "정재윤","ㅈㅁㅈㅇ","ㅁㅈㅇㅁ"]
+    )
+    
+  }catch(error)
+  {
+    console.log(error);
+  }
   res.render('index');
 });
 
