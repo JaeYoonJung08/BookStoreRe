@@ -1,3 +1,17 @@
+기본 DB 연결 코드
+  try{
+    const check = await req.db.query(
+      'select * from user where password = ? and name = ?'
+      ,[userPassword, userName]
+    );
+    return alertAndRedirect(res, "로그인이 성공적으로 수행되었습니다", "/");
+  }
+  catch(error)
+  {
+        console.log(error)
+  }
+
+
 ///////////// UPDATE /////////////////
 'UPDATE buymom SET buy_count = ? WHERE book_id = ?'
 'update basketlist set book_count = ? where basket_id = ? and book_id = ?'
