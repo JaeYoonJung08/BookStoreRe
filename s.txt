@@ -1,4 +1,3 @@
-기본 DB 연결 코드
   try{
     const check = await req.db.query(
       'select * from user where password = ? and name = ?'
