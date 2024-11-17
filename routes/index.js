@@ -50,6 +50,7 @@ router.post('/signin', async (req, res) => {
       req.session.user_id = user_id
       req.session.userName = userName
       req.session.basket_id = checkbasketId[0].basket_id
+      req.session.적립금 = check[0].적립금잔액
       console.log("req.session.user_id : " + req.session.user_id)
       console.log("req.session.userName : " +req.session.userName)
       console.log("req.session.bookbasket : " +req.session.basket_id)
@@ -314,7 +315,7 @@ router.get('/bookbasket', async (req, res) => {
   try
   {
       const books = await req.db.query
-      ('select booklist.book_id, booklist.book_name, booklist.book_price, booklist.book_count, basketlist.book_count as book_choice_count from basketlist \
+      ('select booklist.book_id, booklist.book_name, booklist.book_price, booklist.book_count, booklist.적립률, basketlist.book_count as book_choice_count from basketlist \
         inner join booklist on basketlist.book_id = booklist.book_id \
         where basketlist.basket_id = ?',[req.session.basket_id])
       console.log(books);  
@@ -383,8 +384,9 @@ router.post('/orderpage', async (req, res) => {
       //기본 배송지, 상세 배송지, 우편 번호
       const UserAddr = await req.db.query('select * from addr where user_id = ?', [req.session.user_id])
       //카드번호, 카드 종류, 카드 유효기간 
-      const UserCard = await req.db.query('select * from card wherer where user_id = ?', [req.session.user_id])
-      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList});
+      const UserCard = await req.db.query('select * from card  where user_id = ?', [req.session.user_id])
+      const Userpay = await req.db.query('select 적립금잔액 from user  where user_id = ?', [req.session.user_id])
+      res.render('orderpage', {all_price, UserAddr, UserCard, selectedBookList,Userpay});
   }
   catch(error)
   {
@@ -426,45 +428,204 @@ router.post('/buynow/orderpage', async (req, res) => {
 //  이제 주문 목록, 주문 총액, 배송지 정보, 카드 정보 보여주면서 마지막 주문
 router.post('/orderpage/add', async (req, res) => {
   logger.info(`Request received for URL: ${req.originalUrl}`);
-  let {totalPrice,  selectedBookList, selectedAddress, selectedCard } = req.body;
-  console.log("totalPrice : ", totalPrice); console.log("selectedCard : ", selectedCard); console.log("selectedAddress : ", selectedAddress); console.log("selectedBookList : ", selectedBookList);
+  let { totalPrice, selectedBookList, selectedAddress, selectedCard, 사용적립금 } = req.body;
+
+  // JSON 문자열을 객체로 변환
   selectedBookList = JSON.parse(selectedBookList);
   selectedAddress = JSON.parse(selectedAddress);
   selectedCard = JSON.parse(selectedCard);
-  try{
-      //주문시킨 책 만큼 책 개수 감소 //반복문!!!!!!!!!!!!!!!!!!!
-      for (let book of selectedBookList) {
-          // Calculate the new book count
-          const newCount = parseInt(book.book_count) - parseInt(book.book_choice_count) 
-          // Update the book count in the database
-          await req.db.query('UPDATE booklist SET book_count = ? WHERE book_id = ?', [newCount, book.book_id]);
-      }
-      //order 테이블에 값 넣기
-      const insertOrderQuery = `
+
+  // 총 가격과 사용 적립금을 숫자로 변환
+  totalPrice = parseInt(totalPrice) || 0;
+  사용적립금 = parseInt(사용적립금) || 0;
+  let here = parseInt(사용적립금);
+
+  // 총액에서 사용 적립금 차감
+  if (사용적립금 > 0 && 사용적립금 < totalPrice) {
+    totalPrice -= 사용적립금;
+  }
+
+  // 적립금 사용 금액과 신용카드 결제 금액 설정
+  const 적립금사용금액 = 사용적립금 <= totalPrice ? 사용적립금 : totalPrice;
+  const 신용카드결제금액 = 사용적립금 >= totalPrice ? 0 : totalPrice;
+
+  try {
+    // 책 수량 업데이트
+    for (let book of selectedBookList) {
+      const newCount = parseInt(book.book_count) - parseInt(book.book_choice_count);
+      await req.db.query('UPDATE booklist SET book_count = ? WHERE book_id = ?', [newCount, book.book_id]);
+    }
+
+    // 주문 정보 orders 테이블에 삽입
+    const insertOrderQuery = `
       INSERT INTO orders (
-          user_id, all_price, basic_add, detail_add, postal_code, card_number, type_card, expriation_time
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+          user_id, all_price, basic_add, detail_add, postal_code, card_number, type_card, expriation_time, 적립금사용금액, 신용카드결제금액
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    
+    const result = await req.db.query(insertOrderQuery, [
+      req.session.user_id, totalPrice,
+      selectedAddress.basic_add, selectedAddress.detail_add, selectedAddress.postal_code,
+      selectedCard.card_number, selectedCard.type_card, selectedCard.expriation_time,
+      적립금사용금액, 신용카드결제금액
+    ]);
+    const orders_id = result.insertId;
+
+    // 주문 목록 orderlist 테이블에 추가
+    for (const book of selectedBookList) {
+      const insertOrderListQuery = `INSERT INTO orderlist (orders_id, book_id, orderlist_count) VALUES (?, ?, ?)`;
+      await req.db.query(insertOrderListQuery, [orders_id, book.book_id, book.book_choice_count]);
+      await req.db.query('DELETE FROM basketlist WHERE basket_id = ? AND book_id = ?', [req.session.basket_id, book.book_id]);
+    }
+
+    // 적립금 계산 및 거래내역 추가
+    let user_one = await req.db.query('SELECT * FROM user WHERE user_id = ?', [req.session.user_id]);
+    const 거래구분 = 사용적립금 > 0 ? "사용" : "적립";
+    let tt = user_one[0].적립금잔액 - 적립금사용금액;
+
+    await req.db.query(
+      `INSERT INTO 적립금거래내역(거래구분, 거래금액, 거래잔액, 거래내용, user_id) VALUES (?, ?, ?, ?, ?)`,
+      [거래구분, 적립금사용금액, tt, result.insertId, req.session.user_id]
+    );
+
+    // 사용자 적립금 업데이트
+    await req.db.query('UPDATE user SET 적립금잔액 = ? WHERE user_id = ?', [tt, req.session.user_id]);
+
+    return alertAndRedirect(res, "주문이 성공적으로 처리되었습니다.", "/");
+  } catch (error) {
+    console.log(error);
+    return alertAndRedirect(res, "주문 처리 중 오류가 발생했습니다.", "/");
+  }
+});
+
+
+// router.post('/orderpage/add', async (req, res) => {
+//   logger.info(`Request received for URL: ${req.originalUrl}`);
+//   let {totalPrice,  selectedBookList, selectedAddress, selectedCard, 사용적립금} = req.body;
+//   console.log("totalPrice : ", totalPrice); console.log("selectedCard : ", selectedCard); console.log("selectedAddress : ", selectedAddress); console.log("selectedBookList : ", selectedBookList);
+//   selectedBookList = JSON.parse(selectedBookList);
+//   selectedAddress = JSON.parse(selectedAddress);
+//   selectedCard = JSON.parse(selectedCard);
+
+//   // 적립금 계산 (사용적립금이 0일 때만 계산)
+//   // 총 가격과 사용 적립금을 숫자로 변환
+//   totalPrice = parseInt(totalPrice) || 0;
+//   사용적립금 = parseInt(사용적립금) || 0;
+//   let here = parseInt(사용적립금)
+
+//    // 사용적립금이 있을 때만 차감
+//    if (사용적립금 > 0) {
+//     totalPrice -= 사용적립금;
+//   }
+
+//   try{
+//       //주문시킨 책 만큼 책 개수 감소 //반복문!!!!!!!!!!!!!!!!!!!
+//       for (let book of selectedBookList) {
+//           // Calculate the new book count
+//           const newCount = parseInt(book.book_count) - parseInt(book.book_choice_count) 
+//           // Update the book count in the database
+//           await req.db.query('UPDATE booklist SET book_count = ? WHERE book_id = ?', [newCount, book.book_id]);
+//       }
+
+
+
+//       //order 테이블에 값 넣기
+//       const insertOrderQuery = `
+//       INSERT INTO orders (
+//           user_id, all_price, basic_add, detail_add, postal_code, card_number, type_card, expriation_time, 적립금사용금액, 신용카드결제금액
+//       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
       
-      const result = await req.db.query(insertOrderQuery, [
-          req.session.user_id, totalPrice, 
-          selectedAddress.basic_add, selectedAddress.detail_add, selectedAddress.postal_code, 
-          selectedCard.card_number, selectedCard.type_card, selectedCard.expriation_time
-      ]);
-      console.log('Order inserted successfully ', result);
-      const orders_id = result.insertId;
-      //여기서 부터 orderlist에 주문수량 넣어주어야함
-      for (const book of selectedBookList) {
-          const insertOrderListQuery = `INSERT INTO orderlist (orders_id, book_id, orderlist_count)VALUES (?, ?, ?)`;
-          await req.db.query(insertOrderListQuery, [orders_id, book.book_id, book.book_choice_count]);
-          //주문을 했으니 장바구니에서 없애주어야함. -> req.session.basket_id과 주문한 selectedBookList이용
-          await req.db.query('delete from basketlist where basket_id = ? and book_id = ?',[req.session.basket_id, book.book_id])
-      }
-      return alertAndRedirect(res, "주문이 성공적으로 처리되었습니다.", "/");
-  }
-  catch(error){
-      console.log(error); return alertAndRedirect(res, "주문 처리 중 오류가 발생했습니다.", "/");
-  }
-})
+//       const result = await req.db.query(insertOrderQuery, [
+//           req.session.user_id, totalPrice, 
+//           selectedAddress.basic_add, selectedAddress.detail_add, selectedAddress.postal_code, 
+//           selectedCard.card_number, selectedCard.type_card, selectedCard.expriation_time
+//       ]);
+//       console.log('Order inserted successfully ', result);
+//       const orders_id = result.insertId;
+//       let pay = 0;
+//       let totalPay = 0 ;
+//       //여기서 부터 orderlist에 주문수량 넣어주어야함
+//       for (const book of selectedBookList) {
+//           const insertOrderListQuery = `INSERT INTO orderlist (orders_id, book_id, orderlist_count)VALUES (?, ?, ?)`;
+//           await req.db.query(insertOrderListQuery, [orders_id, book.book_id, book.book_choice_count]);
+//           //주문을 했으니 장바구니에서 없애주어야함. -> req.session.basket_id과 주문한 selectedBookList이용
+//           await req.db.query('delete from basketlist where basket_id = ? and book_id = ?',[req.session.basket_id, book.book_id])
+
+
+//         // 적립금 계산 (사용적립금이 0일 때만 계산)
+//         // const 사용적립금 = req.body.사용적립금 || 0; // 사용적립금이 전달되지 않으면 0으로 설정
+
+//         if (here === 0) {
+//             const checkbook = await req.db.query('select * from booklist where book_id = ?', [book.book_id]);
+//             let pay = parseInt(checkbook[0].book_price) * (parseInt(checkbook[0].적립률) * 0.01);
+
+//             for (let i = 0; i < book.book_choice_count; i++) {
+//                 totalPay += pay;
+//             }
+//             console.log("pay ", pay);
+//         } else {
+//           // totalPay = here
+//           totalPay = 0;
+//             console.log("사용적립금이 있어 적립금 계산을 생략합니다.");
+
+//         }
+ 
+
+//         // let user_one = await req.db.query(
+//         //   'select * from user where user_id = ?',
+//         //   [req.session.user_id]
+
+//       }
+
+//       let user_one = await req.db.query(
+//         'select * from user where user_id = ?',
+//         [req.session.user_id])
+
+//       console.log(totalPay)
+
+
+//       console.log(totalPay)
+//          // 거래 구분 설정
+//          const 거래구분 = 사용적립금 > 0 ? "사용" : "적립";
+      
+//       let tt =0;
+//       // 최종 적립금 잔액 계산
+//       if (here === 0)
+//       {
+//         tt = user_one[0].적립금잔액 + totalPay - here;
+//         let payinfo = await req.db.query(
+//           `INSERT INTO 적립금거래내역(거래구분, 거래금액,거래잔액,거래내용, user_id)VALUES (?, ?, ?,?, ?)`,
+//           [거래구분, totalPay ,tt, result.insertId ,req.session.user_id]
+//         )
+//       }
+//       else 
+//       {
+//         tt = user_one[0].적립금잔액 - here;
+//         totalPay = here
+//         let payinfo = await req.db.query(
+//           `INSERT INTO 적립금거래내역(거래구분, 거래금액,거래잔액,거래내용, user_id)VALUES (?, ?, ?,?, ?)`,
+//           [거래구분, here ,tt, result.insertId ,req.session.user_id]
+//         )
+//       }
+
+//       console.log(tt)
+//       console.log(user_one[0].적립금잔액)
+//       console.log(totalPay)
+//       console.log(사용적립금)
+
+   
+  
+
+//       let user = await req.db.query(
+//         'UPDATE user SET 적립금잔액 = ? WHERE user_id = ?',
+//         [tt, req.session.user_id])
+//       // result.insertId;
+
+//       return alertAndRedirect(res, "주문이 성공적으로 처리되었습니다.", "/");
+//   }
+//   catch(error){
+//       console.log(error); return alertAndRedirect(res, "주문 처리 중 오류가 발생했습니다.", "/");
+//   }
+// })
 
 // ---------------------------------------- 주문 내역 페이지 -------------------
 router.get('/orderpagelist', async (req, res) => {

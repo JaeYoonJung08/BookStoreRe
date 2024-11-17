@@ -16,61 +16,63 @@ html
         background-color: #f2f2f2;
         text-align: left;
       }
-    body 
-      a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
-      form(action="/orderpage/add", method="POST")
-        h2 주문 목록
-        table
-          thead 
+  body 
+    a(href="/" style="margin-bottom: 10px;") 메인화면 돌아가기
+    form(action="/orderpage/add", method="POST")
+      h2 주문 목록
+      table
+        thead 
+          tr
+            th 책 ID 
+            th 책 이름
+            th 가격
+            th 선택한 수량
+            th 책의 총 수량
+        tbody 
+          each book in selectedBookList
             tr
-              th 책 ID 
-              th 책 이름
-              th 가격
-              th 선택한 수량
-              th 책의 총 수량
-          tbody 
-            each book in selectedBookList
-              tr
-                td= book.book_id
-                td= book.book_name
-                td= book.book_price
-                td= book.book_choice_count
-                td= book.book_count
-        h2 주문 총액: #{all_price} 원
-        h3 배송지 정보
-        if UserAddr.length
-          select(name="selectedAddress")
-            each addr in UserAddr
-              option(
-                value=`${JSON.stringify({
-                  addr_id: addr.addr_id,
-                  basic_add: addr.basic_add,
-                  detail_add: addr.detail_add,
-                  postal_code: addr.postal_code
-                })}`
-              ) #{addr.basic_add} #{addr.detail_add} #{addr.postal_code}
-        else
-          p 배송지 정보가 없습니다.
-        h3 카드 정보
-        if UserCard.length
-          select(name="selectedCard")
-            each card in UserCard
-              option(
-                value=`${JSON.stringify({
-                  card_id: card.card_id,
-                  type_card: card.type_card,
-                  card_number: card.card_number,
-                  expriation_time: card.expriation_time
-                })}`)= `${card.type_card} 카드 - ${card.card_number} (유효기간: ${card.expriation_time})`
-        else
-          p 카드 정보가 없습니다.
-        input(type="hidden", name="totalPrice", value=all_price)
-        input(type="hidden", name="selectedBookList", value=selectedBookList)
-        button(type="submit") 주문하기
-
-//- if UserAddr.length
-//-   select(name="selectedAddress")
-//-     each addr in UserAddr
-//-       option(value=addr.addr_id)= `${addr.basic_add} ${addr.detail_add} ${addr.postal_code}`
-//- else
-//-   p 배송지 정보가 없습니다.
+              td= book.book_id
+              td= book.book_name
+              td= book.book_price
+              td= book.book_choice_count
+              td= book.book_count
+      h2 주문 총액: #{all_price} 원
+      h3 배송지 정보
+      if UserAddr.length
+        select(name="selectedAddress")
+          each addr in UserAddr
+            option(
+              value=`${JSON.stringify({
+                addr_id: addr.addr_id,
+                basic_add: addr.basic_add,
+                detail_add: addr.detail_add,
+                postal_code: addr.postal_code
+              })}`
+            ) #{addr.basic_add} #{addr.detail_add} #{addr.postal_code}
+      else
+        p 배송지 정보가 없습니다.
+      h3 카드 정보
+      if UserCard.length
+        select(name="selectedCard")
+          each card in UserCard
+            option(
+              value=`${JSON.stringify({
+                card_id: card.card_id,
+                type_card: card.type_card,
+                card_number: card.card_number,
+                expriation_time: card.expriation_time
+              })}`)= `${card.type_card} 카드 - ${card.card_number} (유효기간: ${card.expriation_time})`
+      else
+        p 카드 정보가 없습니다.
+      
+      h3 적립금 정보
+      if Userpay[0].적립금잔액 > 0
+        p 남아있는 적립금: #{Userpay[0].적립금잔액} 원
+        label 사용 적립금: 
+        input(type="number", name="사용적립금", max=Userpay[0].적립금잔액, placeholder="사용할 적립금 입력")
+      else
+        p 적립금이 없습니다.
+      
+      input(type="hidden", name="totalPrice", value=all_price)
+      input(type="hidden", name="selectedBookList", value=selectedBookList)
+      button(type="submit") 주문하기
